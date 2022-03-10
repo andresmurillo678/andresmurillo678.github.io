@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="javascript.js"></script>
+    <title>Práctica JavaScript</title>
+</head>
+<body bgcolor=" #9b9b9b">
+    <h1>Práctica JavaScript</h1><hr>
+    
+    <div style="color: black;" id="div1" onmouseover="change()" onmouseout="comeback()">
+        <h3>Texto cambia color
+    </div>
+
+    <button style="background-color: blue;" onclick="change()"><b>Diferente Color</b></button>
+
+    <h2>Productos</h2><hr>
+
+    <h3>Producto 1 <input type="number" value="" id="p1" onchange="refreshall(document.getElementById('p1').value)"></h3>
+    <h3>Producto 2 <input type="number" value="" id="p2" onchange="refreshall(document.getElementById('p2').value)"></h3>
+    <h3>Producto 3 <input type="number" value="" id="p3" onchange="refreshall(document.getElementById('p3').value)"></h3>
+    <h3>Producto 4 <input type="number" value="" id="p4" onchange="refreshall(document.getElementById('p4').value)"></h3>
+
+    <h3>Total: <input type="number" readonly value="0" id="total"> </h3>
+    
+    <div data-role="footer">
+        
+            Murillo Figueroa Carlos Andres - 6AVP - Programacion - Cetis 107 &copy; 2022
+            <br><h3><a href="index.html">Regresar al index</a></h3>
+
+    </div>
+
+</body>
+</html>
