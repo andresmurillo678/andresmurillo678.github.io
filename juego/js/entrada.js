@@ -52,6 +52,13 @@ const Entrada = (() => {
       }
     });
     window.addEventListener('pointermove', (e) => {
+      // Si se soltó el dedo que mandaba pero otro sigue apoyado, ese toma el control
+      if (punteroId === null && e.buttons) {
+        punteroId = e.pointerId;
+        ultimoX = e.clientX;
+        ultimoY = e.clientY;
+        return;
+      }
       if (e.pointerId !== punteroId) return;
       const r = lienzo.getBoundingClientRect();
       arrastreX += (e.clientX - ultimoX) * W / r.width;

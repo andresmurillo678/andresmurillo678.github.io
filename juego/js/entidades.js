@@ -13,6 +13,20 @@ const Util = {
     const r = a.radio + b.radio + (extra || 0);
     return dx * dx + dy * dy < r * r;
   },
+  // Choque "con barrido": revisa todo el camino que hizo la bala en este
+  // cuadro (relativo al blanco), así las balas rápidas no atraviesan nada.
+  chocaBarrido(bala, blanco) {
+    const ax = bala.px - blanco.px;
+    const ay = bala.py - blanco.py;
+    const dx = (bala.x - blanco.x) - ax;
+    const dy = (bala.y - blanco.y) - ay;
+    const largo2 = dx * dx + dy * dy;
+    const t = largo2 > 0 ? Util.limitar(-(ax * dx + ay * dy) / largo2, 0, 1) : 0;
+    const cx = ax + dx * t;
+    const cy = ay + dy * t;
+    const r = bala.radio + blanco.radio;
+    return cx * cx + cy * cy < r * r;
+  },
   elegirPorPeso(pesos) {
     let total = 0;
     for (const k in pesos) total += pesos[k];
@@ -174,10 +188,14 @@ class Bala {
     this.color = color;
     this.dano = dano;
     this.estilo = estilo; // 'linea' (jugador) u 'orbe' (enemigos)
+    this.px = x; // posición anterior (para el choque con barrido)
+    this.py = y;
     this.vivo = true;
   }
 
   actualizar(dt) {
+    this.px = this.x;
+    this.py = this.y;
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     if (this.y < -30 || this.y > CONFIG.alto + 30 || this.x < -30 || this.x > CONFIG.ancho + 30) {
@@ -229,10 +247,14 @@ class Enemigo {
     this.cooldown = Util.azar(0.6, c.cadencia || 1);
     this.objetivoY = Util.azar(90, CONFIG.alto * 0.38);
     this.lanzado = false;
+    this.px = x;
+    this.py = y;
     this.vivo = true;
   }
 
   actualizar(dt, j) {
+    this.px = this.x;
+    this.py = this.y;
     this.t += dt;
     if (this.golpe > 0) this.golpe -= dt;
     const p = j.jugador && j.jugador.vivo ? j.jugador : null;
@@ -381,10 +403,14 @@ class Jefe {
     this.cooldown = 1;
     this.angulo = 0;
     this.golpe = 0;
+    this.px = this.x;
+    this.py = this.y;
     this.vivo = true;
   }
 
   actualizar(dt, j) {
+    this.px = this.x;
+    this.py = this.y;
     this.t += dt;
     if (this.golpe > 0) this.golpe -= dt;
     const W = CONFIG.ancho;

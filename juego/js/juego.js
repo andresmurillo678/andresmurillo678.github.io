@@ -315,8 +315,10 @@
 
     const aceptar = (!tocoBoton && toques.length > 0) || Entrada.pulso('Enter', 'Space');
 
-    J.estrellas.velocidad += ((J.jefe && J.jefe.entrando ? 5 : 1) - J.estrellas.velocidad) * Math.min(1, dt * 2);
-    J.estrellas.actualizar(dt);
+    if (J.modo !== 'pausa') {
+      J.estrellas.velocidad += ((J.jefe && J.jefe.entrando ? 5 : 1) - J.estrellas.velocidad) * Math.min(1, dt * 2);
+      J.estrellas.actualizar(dt);
+    }
 
     if (J.modo === 'menu') {
       J.tiempoMenu += dt;
@@ -385,7 +387,7 @@
     for (const b of J.balas) {
       if (!b.vivo) continue;
       for (const e of J.enemigos) {
-        if (e.vivo && Util.choca(b, e)) {
+        if (e.vivo && Util.chocaBarrido(b, e)) {
           b.vivo = false;
           e.vida -= b.dano;
           e.golpe = 0.07;
@@ -396,7 +398,7 @@
         }
       }
       const jf = J.jefe;
-      if (b.vivo && jf && !jf.entrando && Util.choca(b, jf)) {
+      if (b.vivo && jf && !jf.entrando && Util.chocaBarrido(b, jf)) {
         b.vivo = false;
         jf.vida -= b.dano;
         jf.golpe = 0.05;
@@ -679,7 +681,7 @@
     g.shadowBlur = 0;
 
     g.save();
-    if (J.sacudida > 0) {
+    if (J.sacudida > 0 && J.modo !== 'pausa') {
       g.translate(Util.azar(-1, 1) * J.sacudida, Util.azar(-1, 1) * J.sacudida);
     }
     dibujarFondo(J.modo === 'pausa' ? 0 : dt);
@@ -697,9 +699,21 @@
   }
 
   // ----------------------------------------------------------- Bucle
+  // Guarda el récord aunque cierres la pestaña a media partida
+  function guardarAlSalir() {
+    if (J.puntos > J.record) guardarRecord(J.puntos);
+  }
+
+  // Si cambias de pestaña o de ventana, el juego se pausa solo
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden && J.modo === 'jugando') J.modo = 'pausa';
+    if (!document.hidden) return;
+    if (J.modo === 'jugando') J.modo = 'pausa';
+    guardarAlSalir();
   });
+  window.addEventListener('blur', () => {
+    if (J.modo === 'jugando') J.modo = 'pausa';
+  });
+  window.addEventListener('pagehide', guardarAlSalir);
 
   let ultimo = null;
   function bucle(ahora) {

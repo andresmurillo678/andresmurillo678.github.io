@@ -8,6 +8,7 @@ const Sonido = (() => {
   let maestro = null;
   let bufferRuido = null;
   let silenciado = false;
+  let inicioPendiente = false;
   const ultimaVez = {};
 
   try { silenciado = localStorage.getItem('nebula_silencio') === '1'; } catch (e) { /* sin almacenamiento */ }
@@ -15,7 +16,11 @@ const Sonido = (() => {
   // El navegador solo deja sonar audio después de que el jugador toca algo.
   function iniciar() {
     if (ctx) {
-      if (ctx.state === 'suspended') ctx.resume();
+      // 'suspended' o 'interrupted' (iOS tras una llamada o cambiar de app)
+      if (ctx.state !== 'running' && ctx.state !== 'closed') {
+        const pr = ctx.resume();
+        if (pr && pr.catch) pr.catch(() => {});
+      }
       return;
     }
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -24,6 +29,19 @@ const Sonido = (() => {
     maestro = ctx.createGain();
     maestro.gain.value = CONFIG.audio.volumen;
     maestro.connect(ctx.destination);
+    // El audio tarda un instante en arrancar: si la melodía de inicio
+    // se pidió antes, suena en cuanto esté listo.
+    ctx.onstatechange = () => {
+      if (ctx.state === 'running' && inicioPendiente) {
+        inicioPendiente = false;
+        melodiaInicio();
+      }
+    };
+  }
+
+  function melodiaInicio() {
+    if (!permitido('inicio', 0.3)) return;
+    [392, 523, 659, 784].forEach((f, i) => tono(f, 0.12, 'square', 0.06, null, i * 0.08));
   }
 
   // Evita que un mismo sonido se repita demasiado seguido
@@ -118,8 +136,11 @@ const Sonido = (() => {
       }
     },
     inicio() {
-      if (!permitido('inicio', 0.3)) return;
-      [392, 523, 659, 784].forEach((f, i) => tono(f, 0.12, 'square', 0.06, null, i * 0.08));
+      if (ctx && ctx.state !== 'running' && !silenciado) {
+        inicioPendiente = true;
+        return;
+      }
+      melodiaInicio();
     },
     oleada() {
       if (permitido('oleada', 0.5)) tono(600, 0.25, 'triangle', 0.08, 900);
