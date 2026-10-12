@@ -98,6 +98,7 @@ let partida = cargarPartida();
 let semillaVistaPrevia = partida ? partida.semilla : semillaAlAzar();
 let anguloTitulo = 0;
 const centroTitulo = new THREE.Vector3();
+let alturaCamTitulo = 0;      // altura de la cámara que da vueltas en el título
 const temporizador = { romper: 0, poner: 0 };
 let tiempoGuardar = 0;
 let tiempoDepuracion = 0;
@@ -130,6 +131,9 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', ajus
 const interfaz = new Interfaz(lienzoAtlas, {
   alElegirRanura: (i) => elegirRanura(i),
   alElegirBloque: (id) => {
+    // si ese bloque ya estaba en otra ranura, se intercambian (así no se repite)
+    const ya = barra.indexOf(id);
+    if (ya >= 0 && ya !== seleccion) barra[ya] = barra[seleccion];
     barra[seleccion] = id;
     interfaz.actualizarBarra(barra, seleccion);
     interfaz.mostrarNombre(nombreBloque(id));
@@ -159,7 +163,9 @@ const controles = new Controles({
     if (jugador.pitch < -lim) jugador.pitch = -lim;
   },
   alCambioBloqueo: (bloqueado) => {
-    if (!bloqueado && estado === 'jugando' && !controles.tactil) pausar();
+    // se soltó el ratón (Esc, cambiar de ventana…): pausa. En modo táctil puro
+    // nunca se atrapa el ratón, así que esto solo pasa si lo estabas usando.
+    if (!bloqueado && estado === 'jugando') pausar();
   },
   alAccion: (accion, dato) => {
     switch (accion) {
@@ -179,8 +185,8 @@ const controles = new Controles({
       case 'musica': alternarMusica(); break;
       case 'elegir': elegirDeLaMira(); break;
       case 'modoTactil':
-        tactil = true;
-        interfaz.modoTactil(true);
+        tactil = !!dato;
+        interfaz.modoTactil(tactil);
         ajustarTamano();
         break;
       default: break;
@@ -239,11 +245,12 @@ function romper() {
     interfaz.aviso('Esa roca no se puede romper');
     return false;
   }
-  // si al lado hay agua, el hueco se llena de agua
+  // si al lado hay agua del mar, el hueco se llena de agua del mar
+  // (el agua que tú pones se queda quieta: no se riega)
   let nuevo = B.AIRE;
   const vecinos = [[1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1], [0, 1, 0]];
   for (const [dx, dy, dz] of vecinos) {
-    if (DIBUJO[mundo.obtener(x + dx, y + dy, z + dz)] === DIBUJO_AGUA) { nuevo = B.AGUA; break; }
+    if (mundo.obtener(x + dx, y + dy, z + dz) === B.AGUA) { nuevo = B.AGUA; break; }
   }
   if (!mundo.poner(x, y, z, nuevo)) return false;
   // una flor sin suelo se cae
@@ -341,7 +348,72 @@ function mostrarTitulo() {
   $('panelNuevo').classList.add('oculto');
   $('campoSemilla').value = '';
   actualizarTitulo();
+  prepararCamaraTitulo();
+}
+
+// ----------------------------------------------------------- Cámara del título
+// La cámara da vueltas despacito alrededor de donde estabas, siempre
+// por encima de lo que haya cerca (colinas, montañas o árboles).
+
+// Altura del suelo en (x, z): si el chunk ya existe se usa el de verdad
+// (con árboles y lo que construiste); si no, lo que dice el generador
+// más 7 por si ahí hay un árbol.
+function sueloTitulo(x, z) {
+  const xi = Math.floor(x), zi = Math.floor(z);
+  const h = mundo.alturaSuelo(xi, zi);
+  return Math.max(CONFIG.mundo.nivelMar, h >= 0 ? h : mundo.gen.alturaEn(xi, zi) + 7);
+}
+
+function giroTitulo() {
+  return Math.max(12, Math.min(30, radio * 16 * 0.38));
+}
+
+// Lo más alto que hay alrededor de la cámara (hasta 10 bloques) y un poquito
+// más adelante en su vuelta: así no queda pegada a la pared de un cerro.
+const ALREDEDOR_TITULO = [[0, 0]];
+for (const d of [3, 6, 10]) {
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    ALREDEDOR_TITULO.push([Math.round(Math.cos(a) * d), Math.round(Math.sin(a) * d)]);
+  }
+}
+function sueloVueltaTitulo(angulo, giro) {
+  let max = 0;
+  for (let a = 0; a <= 0.121; a += 0.04) {
+    const cx = centroTitulo.x + Math.cos(angulo + a) * giro;
+    const cz = centroTitulo.z + Math.sin(angulo + a) * giro;
+    for (const [ox, oz] of ALREDEDOR_TITULO) max = Math.max(max, sueloTitulo(cx + ox, cz + oz));
+  }
+  return max;
+}
+
+// Pone la cámara del título de una vez a buena altura (sin subir desde abajo de la tierra)
+function prepararCamaraTitulo() {
+  const giro = giroTitulo();
   centroTitulo.set(jugador.x, 0, jugador.z);
+  centroTitulo.y = sueloTitulo(centroTitulo.x, centroTitulo.z) + giro * 0.45;
+  alturaCamTitulo = Math.max(centroTitulo.y + giro * 0.25, sueloVueltaTitulo(anguloTitulo, giro) + 4);
+}
+
+function moverCamaraTitulo(dt) {
+  anguloTitulo += dt * 0.04;
+  const giro = giroTitulo();
+  const objetivoY = sueloTitulo(centroTitulo.x, centroTitulo.z) + giro * 0.45;
+  centroTitulo.y += (objetivoY - centroTitulo.y) * Math.min(1, dt * 2);
+  const camX = centroTitulo.x + Math.cos(anguloTitulo) * giro;
+  const camZ = centroTitulo.z + Math.sin(anguloTitulo) * giro;
+  // sube rápido si adelante hay algo alto y baja despacito cuando ya pasó
+  const deseada = Math.max(centroTitulo.y + giro * 0.25, sueloVueltaTitulo(anguloTitulo, giro) + 4);
+  const rapidez = deseada > alturaCamTitulo ? 3 : 0.6;
+  alturaCamTitulo += (deseada - alturaCamTitulo) * Math.min(1, dt * rapidez);
+  // y por si acaso: nunca dentro de un bloque
+  let cerca = 0;
+  for (let oz = -1; oz <= 1; oz++) {
+    for (let ox = -1; ox <= 1; ox++) cerca = Math.max(cerca, sueloTitulo(camX + ox, camZ + oz));
+  }
+  if (alturaCamTitulo < cerca + 2) alturaCamTitulo = cerca + 2;
+  camara.position.set(camX, alturaCamTitulo, camZ);
+  camara.lookAt(centroTitulo.x, centroTitulo.y - giro * 0.2, centroTitulo.z);
 }
 
 function actualizarBotonesPausa() {
@@ -414,8 +486,8 @@ function comenzar(nuevo, textoSemilla) {
   if (nuevo) guardar();
   const textoAyuda = controles.tactil
     ? '<b>Joystick</b> caminar · <b>arrastra</b> para mirar<br><b>toca</b> = poner · <b>mantén el dedo</b> = romper'
-    : '<b>WASD</b> caminar · <b>Espacio</b> saltar · <b>Shift</b> correr · <b>F</b> volar<br>' +
-      '<b>Clic izq.</b> romper · <b>Clic der.</b> poner · <b>1-9 / rueda</b> elegir · <b>E</b> bloques · <b>M</b> música · <b>Esc</b> pausa';
+    : '<b>WASD</b> caminar · <b>Espacio</b> saltar · <b>Shift</b> o <b>W W</b> correr · <b>F</b> volar<br>' +
+      '<b>Clic izq.</b> romper · <b>Clic der.</b> poner · <b>1-9 / rueda</b> elegir · <b>E</b> bloques · <b>M</b> música · <b>F3</b> datos · <b>Esc</b> pausa';
   interfaz.ayuda(textoAyuda, 12);
 }
 
@@ -429,38 +501,75 @@ function restaurarJugador(p) {
   jugador.yaw = Number.isFinite(j.yaw) ? j.yaw : 0;
   jugador.pitch = Number.isFinite(j.pitch) ? j.pitch : 0;
   jugador.volando = !!j.volando;
-  if (p && Array.isArray(p.barra) && p.barra.length === 9 && p.barra.every(esValido)) barra = p.barra.slice();
+  if (p && Array.isArray(p.barra) && p.barra.length === 9 && p.barra.every(esValido)) {
+    // las partidas viejas tenían el agua del mar en la barra: ahora es el agua que se puede quitar
+    barra = p.barra.map((id) => (id === B.AGUA ? B.AGUA_PUESTA : id));
+  }
   seleccion = p && Number.isInteger(p.seleccion) ? Math.max(0, Math.min(8, p.seleccion)) : 0;
   if (p && Number.isFinite(p.hora)) hora = ((p.hora % 1) + 1) % 1;
 }
 
-// Busca dónde pararse (sobre pasto o arena, no arriba de un árbol)
+// Busca dónde pararse: sobre pasto o arena, en un lugar parejito
+// (sin paredes ni árboles pegados) y mirando hacia donde hay vista.
 function pararseEnSuelo() {
   const bx = Math.floor(jugador.x), bz = Math.floor(jugador.z);
-  for (let r = 0; r <= 6; r++) {
+  const SUELOS = [B.PASTO, B.ARENA, B.NIEVE, B.TIERRA];
+  let mejor = null, mejorPuntos = -1;
+  for (let r = 0; r <= 12 && mejorPuntos < 24; r++) {
     for (let dz = -r; dz <= r; dz++) {
       for (let dx = -r; dx <= r; dx++) {
         if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
         const x = bx + dx, z = bz + dz;
         if (!mundo.estaListo(x, z)) continue;
         const y = mundo.alturaSuelo(x, z);
-        const id = mundo.obtener(x, y, z);
-        if (id !== B.PASTO && id !== B.ARENA && id !== B.NIEVE && id !== B.TIERRA) continue;
-        // que no haya un tronco pegado (para no aparecer viendo un árbol)
-        let tronco = false;
-        for (let tz = -2; tz <= 2 && !tronco; tz++) {
+        if (y < CONFIG.mundo.nivelMar || !SUELOS.includes(mundo.obtener(x, y, z))) continue;
+        // puntos: cuántos vecinos (5x5) están a la misma altura y sin nada estorbando
+        let puntos = 0;
+        for (let tz = -2; tz <= 2; tz++) {
           for (let tx = -2; tx <= 2; tx++) {
-            if (mundo.obtener(x + tx, y + 1, z + tz) === B.TRONCO || mundo.obtener(x + tx, y + 2, z + tz) === B.HOJAS) { tronco = true; break; }
+            if (!tx && !tz) continue;
+            const h = mundo.alturaSuelo(x + tx, z + tz);
+            const arriba = mundo.obtener(x + tx, y + 1, z + tz);
+            if (h >= y - 1 && h <= y && (arriba === B.AIRE || DIBUJO[arriba] === DIBUJO_PLANTA)) puntos++;
           }
         }
-        if (tronco && r < 6) continue;
-        jugador.ponerEn(x + 0.5, y + 1, z + 0.5);
-        return;
+        if (mundo.obtener(x, y + 1, z) !== B.AIRE) puntos -= 4;
+        if (puntos > mejorPuntos) { mejorPuntos = puntos; mejor = { x, y, z }; }
+        if (mejorPuntos >= 24) break;
       }
+      if (mejorPuntos >= 24) break;
     }
   }
-  const y = mundo.alturaSuelo(bx, bz);
-  if (y >= 0) jugador.y = y + 1;
+  if (!mejor) {
+    const y = mundo.alturaSuelo(bx, bz);
+    if (y >= 0) jugador.y = y + 1;
+    return;
+  }
+  // una flor o pasto alto donde aparecemos se quita (para no verla pegada a la cara)
+  if (DIBUJO[mundo.obtener(mejor.x, mejor.y + 1, mejor.z)] === DIBUJO_PLANTA) {
+    mundo.poner(mejor.x, mejor.y + 1, mejor.z, B.AIRE);
+  }
+  jugador.ponerEn(mejor.x + 0.5, mejor.y + 1, mejor.z + 0.5);
+  jugador.yaw = direccionConVista(mejor.x, mejor.y, mejor.z);
+}
+
+// De 16 direcciones, elige la que tiene menos cosas enfrente
+function direccionConVista(x, y, z) {
+  let mejorYaw = 0, menor = Infinity;
+  for (let i = 0; i < 16; i++) {
+    const yaw = (i / 16) * Math.PI * 2;
+    const dx = -Math.sin(yaw), dz = -Math.cos(yaw); // hacia dónde ve la cámara con ese giro
+    let estorbo = 0;
+    for (let d = 1; d <= 14; d++) {
+      const cx = Math.floor(x + 0.5 + dx * d), cz = Math.floor(z + 0.5 + dz * d);
+      let h = mundo.alturaSuelo(cx, cz);
+      if (h < 0) h = y;
+      const sobra = h - y - 1;
+      if (sobra > 0) estorbo += (sobra + 2) / d;
+    }
+    if (estorbo < menor - 0.01) { menor = estorbo; mejorYaw = yaw; }
+  }
+  return mejorYaw;
 }
 
 // ----------------------------------------------------------- Botones de los menús
@@ -567,17 +676,7 @@ function cuadro(ahora) {
 
   // Cámara
   if (estado === 'titulo') {
-    // la cámara da vueltas despacito alrededor del lugar de inicio
-    anguloTitulo += dt * 0.04;
-    const giro = Math.max(12, Math.min(30, radio * 16 * 0.38));
-    const suelo = Math.max(CONFIG.mundo.nivelMar, mundo.alturaSuelo(Math.floor(centroTitulo.x), Math.floor(centroTitulo.z)));
-    const objetivoY = suelo + giro * 0.45;
-    centroTitulo.y += (objetivoY - centroTitulo.y) * Math.min(1, dt * 2);
-    camara.position.set(
-      centroTitulo.x + Math.cos(anguloTitulo) * giro,
-      centroTitulo.y + giro * 0.25,
-      centroTitulo.z + Math.sin(anguloTitulo) * giro);
-    camara.lookAt(centroTitulo.x, centroTitulo.y - giro * 0.2, centroTitulo.z);
+    moverCamaraTitulo(dt);
   } else {
     camara.position.set(jugador.x, jugador.y + J.ojos, jugador.z);
     camara.rotation.set(jugador.pitch, jugador.yaw, 0, 'YXZ');
@@ -610,6 +709,7 @@ function cuadro(ahora) {
   }
   renderer.setClearColor(escena.fog.color);
   interfaz.bajoAgua(bajoAgua);
+  cielo.bajoAgua(bajoAgua); // bajo el agua no se ve el cielo, solo azul
   Musica.ponerAnimo(dia > 0.4 ? 'dia' : 'noche');
 
   // Crear/dibujar chunks cerca de donde está la cámara
@@ -664,7 +764,6 @@ else {
 }
 interfaz.actualizarBarra(barra, seleccion);
 mostrarTitulo();
-centroTitulo.y = Math.max(CONFIG.mundo.nivelMar, jugador.y) + 10;
 requestAnimationFrame(cuadro);
 
 // Para hacer pruebas desde la consola del navegador
@@ -691,4 +790,5 @@ window.BLOQUES = {
   abrirInventario,
   cerrarInventario,
   alternarVuelo,
+  moverCamaraTitulo,
 };

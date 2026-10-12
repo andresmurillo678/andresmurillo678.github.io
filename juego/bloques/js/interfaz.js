@@ -13,7 +13,7 @@ const $ = (id) => document.getElementById(id);
 function dibujarIcono(atlas, bloque) {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
-  const ctx = c.getContext('2d');
+  const ctx = c.getContext('2d', { willReadFrequently: true });
   ctx.imageSmoothingEnabled = false;
   const origen = (nombre) => origenTextura(indiceTextura(nombre));
   if (bloque.dibujo === 'planta') {
@@ -55,6 +55,7 @@ export class Interfaz {
       barra: $('barra'),
       nombre: $('nombreBloque'),
       aviso: $('aviso'),
+      avisoPausa: $('avisoPausa'),
       ayuda: $('ayuda'),
       depuracion: $('depuracion'),
       agua: $('bajoAgua'),
@@ -135,7 +136,12 @@ export class Interfaz {
   }
 
   aviso(texto, segundos = 1.8) {
-    const e = this.el.aviso;
+    // en pausa el aviso de arriba queda tapado por el menú: se escribe dentro del menú
+    const enPausa = !this.el.pausa.classList.contains('oculto');
+    const e = enPausa ? this.el.avisoPausa : this.el.aviso;
+    const otro = enPausa ? this.el.aviso : this.el.avisoPausa;
+    otro.classList.remove('visible');
+    if (enPausa) segundos = Math.max(segundos, 2.5);
     e.textContent = texto;
     e.classList.add('visible');
     clearTimeout(this.tiempoAviso);

@@ -305,8 +305,10 @@
 
   // Botón "← MENÚ" para volver a la lista de juegos. No sale mientras
   // juegas (para no tapar los puntos): solo en el inicio, la pausa y el final.
+  // En la pausa va arriba a la izquierda, lejos del centro: ahí es donde
+  // tocas para continuar, y un toque sin querer te sacaría de la partida.
   const MENU_INICIO = { x: 14, y: 13, w: 104, h: 34 };
-  const MENU_PAUSA = { x: W / 2 - 80, y: H * 0.6, w: 160, h: 42 };
+  const MENU_PAUSA = MENU_INICIO;
   const MENU_FIN = { x: W / 2 - 80, y: H * 0.8, w: 160, h: 42 };
   const tocadoRect = (t, b) =>
     t.x > b.x - 6 && t.x < b.x + b.w + 6 && t.y > b.y - 6 && t.y < b.y + b.h + 6;
@@ -551,15 +553,18 @@
     g.restore();
   }
 
-  function dibujarBoton(b, simbolo, tachado) {
+  // tachado = apagado (raya roja). tenue = se ve clarito porque ahora
+  // no puede sonar (la música cuando todo está en silencio con M).
+  function dibujarBoton(b, simbolo, tachado, tenue) {
+    const base = tenue ? 0.45 : 1;
     g.save();
-    g.globalAlpha = 0.85;
+    g.globalAlpha = 0.85 * base;
     g.strokeStyle = COL.textoSuave;
     g.lineWidth = 2;
     g.beginPath();
     g.arc(b.x, b.y, b.r, 0, Math.PI * 2);
     g.stroke();
-    if (tachado) g.globalAlpha = 0.45;
+    if (tachado) g.globalAlpha = 0.45 * base;
     texto(simbolo, b.x, b.y + 1, 14, COL.texto, 800);
     if (tachado) {
       // Una raya cruzada: "apagado"
@@ -577,8 +582,10 @@
 
   function dibujarBotonesAudio() {
     dibujarBoton(BOTON_SONIDO, Sonido.silenciado ? '×' : '♪');
-    // Si todo está en silencio, la música tampoco suena: se ve apagada
-    dibujarBoton(BOTON_MUSICA, '♫', !Musica.activa || Sonido.silenciado);
+    // La raya dice si la música está prendida o apagada (N). Con todo en
+    // silencio (M) el botón se ve clarito, pero la raya sigue diciendo
+    // cómo quedará la música cuando quites el silencio.
+    dibujarBoton(BOTON_MUSICA, '♫', !Musica.activa, Sonido.silenciado);
   }
 
   // Botón con forma de píldora y una flecha "←" dibujada a mano
@@ -623,11 +630,14 @@
 
   function dibujarHUD() {
     const p = J.jugador;
-    texto(String(J.puntos), 16, 26, 22, COL.texto, 800, 'left');
-    texto(`RÉCORD ${Math.max(J.record, J.puntos)}`, 16, 50, 11, COL.textoSuave, 500, 'left');
+    // En la pausa ahí va el botón "← MENÚ" (los puntos salen en el centro)
+    if (J.modo !== 'pausa') {
+      texto(String(J.puntos), 16, 26, 22, COL.texto, 800, 'left');
+      texto(`RÉCORD ${Math.max(J.record, J.puntos)}`, 16, 50, 11, COL.textoSuave, 500, 'left');
+    }
 
     const mult = J.multiplicador();
-    if (mult > 1) {
+    if (mult > 1 && J.modo !== 'pausa') {
       const ancho = Math.max(0, J.relojCombo / CONFIG.combo.ventana);
       textoBrillante(`x${mult}`, 16 + 28, 76, 18, COL.acento);
       g.fillStyle = COL.acento;
@@ -741,8 +751,10 @@
     velo();
     textoBrillante('PAUSA', W / 2, H * 0.42, 44, COL.jugador);
     texto('Toca para continuar', W / 2, H * 0.52, 16, COL.texto, 500);
-    dibujarPildora(MENU_PAUSA, 'MENÚ');
+    texto(`PUNTOS  ${J.puntos}`, W / 2, H * 0.6, 16, COL.acento);
     texto('M sonido  ·  N música', W / 2, H * 0.7, 12, COL.textoSuave, 500);
+    dibujarPildora(MENU_PAUSA, 'MENÚ');
+    dibujarBotonesAudio(); // encima del velo: se pueden tocar en la pausa
   }
 
   function dibujarFin() {
@@ -761,6 +773,7 @@
       g.restore();
       dibujarPildora(MENU_FIN, 'MENÚ');
     }
+    dibujarBotonesAudio(); // encima del velo: se pueden tocar aquí también
   }
 
   function dibujar(dt) {

@@ -157,6 +157,17 @@ button {
 }
 #aviso.visible { opacity: 1; }
 
+/* Los avisos en pausa salen dentro de la tarjeta (el de arriba quedaría tapado) */
+#avisoPausa {
+  min-height: 1.4em;
+  margin: 0;
+  font-weight: 700;
+  color: var(--cian);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+#avisoPausa.visible { opacity: 1; }
+
 #nombreBloque {
   position: absolute;
   left: 50%;
@@ -302,9 +313,10 @@ body.enTitulo #tactil { display: none; }
   height: 56px;
   font-size: 10px;
 }
+/* BAJAR va arriba de VOLAR: así nunca queda encima del joystick */
 #btnBajar {
-  right: calc(196px + var(--seguro-der));
-  bottom: calc(92px + var(--seguro-abajo));
+  right: calc(118px + var(--seguro-der));
+  bottom: calc(238px + var(--seguro-abajo));
   width: 56px;
   height: 56px;
   font-size: 10px;
@@ -328,6 +340,17 @@ body.tactil #barra { --tam: min(42px, calc((100vw - 52px) / 9)); gap: 3px; paddi
 body.tactil #nombreBloque { bottom: calc(66px + var(--seguro-abajo)); }
 body.tactil #ayuda { top: calc(64px + var(--seguro-arriba)); font-size: 12px; }
 
+/* Celular parado y muy angosto (320-350 px): todo un poquito más chico */
+@media (max-width: 350px) and (min-height: 501px) {
+  #joystick { left: calc(66px + var(--seguro-izq)); width: 104px; height: 104px; }
+  #palanca { width: 46px; height: 46px; }
+  #btnSaltar { right: calc(10px + var(--seguro-der)); width: 76px; height: 76px; }
+  #btnRomper { right: calc(94px + var(--seguro-der)); width: 60px; height: 60px; }
+  #btnPoner { right: calc(18px + var(--seguro-der)); bottom: calc(168px + var(--seguro-abajo)); width: 60px; height: 60px; }
+  #btnVolar { right: calc(100px + var(--seguro-der)); bottom: calc(164px + var(--seguro-abajo)); width: 50px; height: 50px; }
+  #btnBajar { right: calc(100px + var(--seguro-der)); bottom: calc(224px + var(--seguro-abajo)); width: 50px; height: 50px; }
+}
+
 /* Celular acostado (poca altura) */
 @media (max-height: 500px) {
   #joystick { top: calc(100% - 128px - var(--seguro-abajo)); width: 112px; height: 112px; }
@@ -335,7 +358,7 @@ body.tactil #ayuda { top: calc(64px + var(--seguro-arriba)); font-size: 12px; }
   #btnRomper { bottom: calc(22px + var(--seguro-abajo)); right: calc(104px + var(--seguro-der)); width: 62px; height: 62px; }
   #btnPoner { bottom: calc(106px + var(--seguro-abajo)); right: calc(24px + var(--seguro-der)); width: 62px; height: 62px; }
   #btnVolar { bottom: calc(100px + var(--seguro-abajo)); right: calc(108px + var(--seguro-der)); width: 52px; height: 52px; }
-  #btnBajar { bottom: calc(26px + var(--seguro-abajo)); right: calc(178px + var(--seguro-der)); width: 52px; height: 52px; }
+  #btnBajar { bottom: calc(100px + var(--seguro-abajo)); right: calc(172px + var(--seguro-der)); width: 52px; height: 52px; }
   body.tactil #barra { --tam: min(40px, calc((100vw - 380px) / 9)); }
   body.tactil #nombreBloque { bottom: calc(60px + var(--seguro-abajo)); }
   body.tactil #ayuda { top: calc(10px + var(--seguro-arriba)); max-width: calc(100vw - 400px); }
@@ -427,7 +450,7 @@ h2 {
 .fila { display: flex; gap: 8px; align-items: center; }
 .fila > button { flex: 1; }
 .fila.distancia { justify-content: center; margin: 8px 0; font-size: 13px; color: var(--suave); }
-.fila.distancia button { flex: 0 0 48px; width: 48px; margin: 0; padding: 8px 0; font-size: 18px; }
+.fila.distancia button { flex: 0 0 48px; width: 48px; margin: 0; padding: 6px 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; font-size: 22px; line-height: 1; }
 .fila.distancia b { min-width: 28px; font-size: 18px; color: #fff; }
 .fila.distancia span { margin-right: 6px; }
 
@@ -521,3 +544,12 @@ body:not(.tactil) .solo-tactil { display: none; }
 
 /* Ocultar la mira y la barra en el título */
 body.enTitulo #hud { display: none; }
+
+/* Inventario más compacto cuando la pantalla es bajita (celular acostado) */
+@media (max-height: 500px) {
+  .tarjeta.ancha { width: min(820px, 100%); padding: 14px 14px 10px; }
+  .tarjeta.ancha h2 { margin-bottom: 4px; font-size: 20px; }
+  #rejillaInventario { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 5px; margin: 6px 0 4px; }
+  .tarjeta .bloqueMenu { padding: 5px 2px 4px; font-size: 10px; }
+  .bloqueMenu img { width: 30px; height: 30px; }
+}

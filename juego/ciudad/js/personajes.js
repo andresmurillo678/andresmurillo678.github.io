@@ -227,8 +227,10 @@ class Peaton {
       this.x += this.vx * dt; this.y += this.vy * dt;
       this.chocarParedes();
       if (this.reloj <= 0) {
+        // Se levanta: primero deja de estar 'caido' (si no, asustar() no hace nada)
+        // y luego sale corriendo un ratito, asustado.
+        this.estado = this.mision ? 'esperando' : 'caminar';
         this.asustar(this.x - this.vx, this.y - this.vy);
-        if (this.mision) this.estado = 'esperando';
       }
       return;
     }

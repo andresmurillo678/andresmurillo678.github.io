@@ -27,7 +27,7 @@ const suave = (a, b, x) => {
 function texturaCuadro(tam, pintar) {
   const c = document.createElement('canvas');
   c.width = c.height = tam;
-  pintar(c.getContext('2d'), tam);
+  pintar(c.getContext('2d', { willReadFrequently: true }), tam); // en memoria normal: se sube rápido a la tarjeta
   const t = new THREE.CanvasTexture(c);
   t.magFilter = THREE.NearestFilter;
   t.minFilter = THREE.NearestFilter;
@@ -159,8 +159,20 @@ export class Cielo {
 
     this.luz = 1;
     this.factorDia = 1;
+    this.escondido = false;
     this.colorNiebla = new THREE.Color();
     this.tmp = new THREE.Vector3();
+  }
+
+  // Bajo el agua se esconde todo el cielo (así se ve solo el azul del agua)
+  bajoAgua(si) {
+    if (si === this.escondido) return;
+    this.escondido = si;
+    this.domo.visible = !si;
+    if (si) {
+      this.sol.visible = this.luna.visible = this.estrellas.visible = false;
+      if (this.nubes) this.nubes.visible = false;
+    }
   }
 
   // Devuelve cuánta luz hay (0 a 1) y deja listo el color de la niebla
@@ -191,14 +203,14 @@ export class Cielo {
     this.luna.position.copy(p).addScaledVector(solDir, -dSol);
     this.luna.scale.setScalar(dSol * 0.1);
     this.luna.lookAt(p);
-    this.sol.visible = altura > -0.25;
-    this.luna.visible = altura < 0.25;
+    this.sol.visible = altura > -0.25 && !this.escondido;
+    this.luna.visible = altura < 0.25 && !this.escondido;
 
     this.estrellas.position.copy(p);
     this.estrellas.scale.setScalar(lejos * 0.85);
     this.estrellas.rotation.set(0, 0, ang);
     this.materialEstrellas.opacity = Math.max(0, 1 - dia * 1.6);
-    this.estrellas.visible = this.materialEstrellas.opacity > 0.01;
+    this.estrellas.visible = this.materialEstrellas.opacity > 0.01 && !this.escondido;
 
     const noche = CONFIG.dia.luzNoche;
     this.luz = noche + (1 - noche) * dia;
@@ -211,7 +223,10 @@ export class Cielo {
       this.materialNubes.map.offset.set((p.x + this.viento) / tile, -p.z / tile);
       const l = 0.35 + 0.65 * dia;
       this.materialNubes.color.setRGB(l, l, l * (dia < 0.5 ? 1.1 : 1));
-      this.nubes.visible = p.y < alturaNubes + 200;
+      // si vuelas justo a la altura de las nubes se desvanecen (para no ver una raya)
+      const cerca = Math.abs(p.y - alturaNubes);
+      this.materialNubes.opacity = 0.8 * Math.min(1, Math.max(0, (cerca - 1) / 7));
+      this.nubes.visible = p.y < alturaNubes + 200 && this.materialNubes.opacity > 0.01 && !this.escondido;
     }
     return this.luz;
   }

@@ -9,6 +9,13 @@
 //              (los nombres vienen de texturas.js)
 //  - sonido:   qué ruido hace al romperlo/ponerlo
 //  - enMenu:   si aparece en el inventario para construir
+//  - orden:    (opcional) en qué lugar sale en el inventario
+//
+//  Hay dos aguas: la del mar (no se puede señalar con la mira, así
+//  puedes romper el fondo a través de ella, y llena los huecos que
+//  haces junto a ella) y el agua que tú pones (se queda quieta, no
+//  se riega, y la puedes quitar con clic izquierdo como cualquier
+//  otro bloque).
 // =============================================================
 import { indiceTextura } from './texturas.js';
 
@@ -17,7 +24,7 @@ export const B = {
   TRONCO: 8, HOJAS: 9, TABLAS: 10, VIDRIO: 11, LADRILLO: 12, LADRILLO_PIEDRA: 13, NIEVE: 14,
   CARBON: 15, HIERRO: 16, ORO: 17, LECHO: 18, FLOR_ROJA: 19, FLOR_AMARILLA: 20, PASTO_ALTO: 21,
   LANA_BLANCA: 22, LANA_ROJA: 23, LANA_NARANJA: 24, LANA_AMARILLA: 25, LANA_VERDE: 26,
-  LANA_AZUL: 27, LANA_MORADA: 28, LANA_ROSA: 29, CALABAZA: 30,
+  LANA_AZUL: 27, LANA_MORADA: 28, LANA_ROSA: 29, CALABAZA: 30, AGUA_PUESTA: 31,
 };
 
 const solo = (t) => [t, t, t];
@@ -30,7 +37,7 @@ export const BLOQUES = [
   { id: B.ADOQUIN, clave: 'adoquin', nombre: 'Adoquín', dibujo: 'solido', caras: solo('adoquin'), sonido: 'piedra', enMenu: true },
   { id: B.ARENA, clave: 'arena', nombre: 'Arena', dibujo: 'solido', caras: solo('arena'), sonido: 'arena', enMenu: true },
   { id: B.GRAVA, clave: 'grava', nombre: 'Grava', dibujo: 'solido', caras: solo('grava'), sonido: 'arena', enMenu: true },
-  { id: B.AGUA, clave: 'agua', nombre: 'Agua', dibujo: 'agua', caras: solo('agua'), sonido: 'agua', enMenu: true },
+  { id: B.AGUA, clave: 'agua', nombre: 'Agua del mar', dibujo: 'agua', caras: solo('agua'), sonido: 'agua' },
   { id: B.TRONCO, clave: 'tronco', nombre: 'Tronco', dibujo: 'solido', caras: ['tronco_arriba', 'tronco_lado', 'tronco_arriba'], sonido: 'madera', enMenu: true },
   { id: B.HOJAS, clave: 'hojas', nombre: 'Hojas', dibujo: 'recorte', caras: solo('hojas'), sonido: 'hojas', enMenu: true },
   { id: B.TABLAS, clave: 'tablas', nombre: 'Tablas de madera', dibujo: 'solido', caras: solo('tablas'), sonido: 'madera', enMenu: true },
@@ -54,6 +61,7 @@ export const BLOQUES = [
   { id: B.LANA_MORADA, clave: 'lana_morada', nombre: 'Bloque morado', dibujo: 'solido', caras: solo('lana_morada'), sonido: 'lana', enMenu: true },
   { id: B.LANA_ROSA, clave: 'lana_rosa', nombre: 'Bloque rosa', dibujo: 'solido', caras: solo('lana_rosa'), sonido: 'lana', enMenu: true },
   { id: B.CALABAZA, clave: 'calabaza', nombre: 'Calabaza', dibujo: 'solido', caras: solo('calabaza'), sonido: 'madera', enMenu: true },
+  { id: B.AGUA_PUESTA, clave: 'agua_puesta', nombre: 'Agua', dibujo: 'agua', caras: solo('agua'), sonido: 'agua', enMenu: true, orden: B.AGUA },
 ];
 
 // ----------------------------------------------------------- Tablas rápidas
@@ -77,7 +85,7 @@ for (const b of BLOQUES) {
   SOLIDO[b.id] = d === DIBUJO_SOLIDO || d === DIBUJO_RECORTE ? 1 : 0;
   OPACO[b.id] = d === DIBUJO_SOLIDO ? 1 : 0;
   SOMBREA[b.id] = d === DIBUJO_SOLIDO || b.id === B.HOJAS ? 1 : 0;
-  APUNTABLE[b.id] = d === DIBUJO_SOLIDO || d === DIBUJO_RECORTE || d === DIBUJO_PLANTA ? 1 : 0;
+  APUNTABLE[b.id] = d === DIBUJO_SOLIDO || d === DIBUJO_RECORTE || d === DIBUJO_PLANTA || b.id === B.AGUA_PUESTA ? 1 : 0;
   POR_CLAVE[b.clave] = b.id;
   if (b.caras) {
     const [arriba, lado, abajo] = b.caras.map(indiceTextura);
@@ -90,7 +98,9 @@ for (const b of BLOQUES) {
   }
 }
 
-export const EN_MENU = BLOQUES.filter((b) => b.enMenu).map((b) => b.id);
+export const EN_MENU = BLOQUES.filter((b) => b.enMenu)
+  .sort((a, b) => (a.orden ?? a.id) - (b.orden ?? b.id) || a.id - b.id)
+  .map((b) => b.id);
 
 export function nombreBloque(id) {
   return (BLOQUES[id] && BLOQUES[id].nombre) || '?';

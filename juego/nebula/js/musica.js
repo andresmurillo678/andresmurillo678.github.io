@@ -22,6 +22,12 @@ const Musica = (() => {
   const ADELANTO = 0.12;   // segundos que se programan por adelantado
   const INTERVALO = 25;    // cada cuántos milisegundos se revisa el reloj
   const PASOS = 16;        // un compás tiene 16 pasos (semicorcheas)
+  // Todos los instrumentos juntos suenan mucho más fuerte que un disparo.
+  // Este número baja la música para que CONFIG.musica.volumen y
+  // CONFIG.audio.volumen se puedan comparar: con el mismo número, música y
+  // efectos suenan parecido; con 0.25 contra 0.35 la música queda debajo
+  // de los efectos (y los disparos y explosiones se oyen bien).
+  const NIVEL = 0.18;
 
   let activa = CONFIG.musica.activa !== false;
   try {
@@ -505,7 +511,7 @@ const Musica = (() => {
       else nodos.retardo.delayTime.setValueAtTime(Math.min(1.4, duracionPaso() * 3), ctx.currentTime);
       paso = 0; // al volver de una pausa se repite el compás desde el principio
       proximaNota = ctx.currentTime + 0.06;
-      fundir(CONFIG.musica.volumen, 0.3);
+      fundir(CONFIG.musica.volumen * NIVEL, 0.3);
     }
     // Si la compu se trabó mucho, no intentamos tocar todo lo atrasado de golpe
     if (proximaNota < ctx.currentTime) proximaNota = ctx.currentTime + 0.02;

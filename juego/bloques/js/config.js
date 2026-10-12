@@ -50,9 +50,9 @@ export const CONFIG = {
     gravedad: 30,           // qué tan rápido caes (bloques por segundo²)
     salto: 9,               // fuerza del salto (9 ≈ salta poco más de 1 bloque)
     velocidad: 4.5,         // caminando (bloques por segundo)
-    velocidadCorrer: 7,     // con Shift (o el joystick hasta el fondo)
+    velocidadCorrer: 7,     // con Shift, W dos veces rápido, o el joystick hasta el fondo
     velocidadVuelo: 11,     // volando
-    velocidadVueloRapido: 22, // volando con Ctrl / Shift
+    velocidadVueloRapido: 22, // volando con W dos veces rápido (o el joystick hasta el fondo)
     velocidadAgua: 2.6,     // nadando
     caidaMaxima: 55,        // velocidad máxima al caer
     ancho: 0.6,             // tamaño de la "caja" del jugador

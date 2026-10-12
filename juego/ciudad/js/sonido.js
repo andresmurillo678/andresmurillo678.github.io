@@ -150,6 +150,19 @@ const Sonido = (() => {
     get listo() { return listo(); },
     get silenciado() { return silenciado; },
 
+    // Cuando la pestaña se esconde (otra pestaña u otra app en el celular)
+    // el audio se congela por completo; al volver se reanuda (o con el
+    // siguiente toque, si el navegador no deja).
+    dormir() {
+      if (ctx && ctx.state === 'running') {
+        const pr = ctx.suspend();
+        if (pr && pr.catch) pr.catch(() => {});
+      }
+    },
+    despertar() {
+      if (ctx) iniciar();
+    },
+
     alternarSilencio() {
       silenciado = !silenciado;
       Util.guardar('silencio', silenciado);

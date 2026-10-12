@@ -2,8 +2,10 @@
 //  🎮  CONTROLES
 //  Compu:   clic para "atrapar" el ratón, mover el ratón para mirar,
 //           WASD o flechas para caminar, Espacio saltar, Shift
-//           correr (o bajar volando), F volar, E bloques, Esc pausa,
+//           correr (o bajar volando), W dos veces rápido = correr
+//           (o volar rápido), F volar, E bloques, Esc pausa,
 //           1-9 o la rueda para elegir bloque, F3 datos, M música.
+//           (No usamos Ctrl: Ctrl+W cierra la pestaña del navegador.)
 //  Celular: joystick a la izquierda para caminar, arrastrar el dedo
 //           en el resto de la pantalla para mirar, tocar = poner,
 //           dejar el dedo quieto = romper, y botones a la derecha.
@@ -13,8 +15,9 @@ import { CONFIG } from './config.js';
 const J = CONFIG.jugador;
 const MOVIMIENTO = new Set([
   'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-  'Space', 'ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight',
+  'Space', 'ShiftLeft', 'ShiftRight',
 ]);
+const ADELANTE = ['KeyW', 'ArrowUp'];
 
 export function detectarTactil() {
   try {
@@ -37,6 +40,8 @@ export class Controles {
     this.alCambioBloqueo = alCambioBloqueo;
     this.puedeJugar = puedeJugar;
     this.tactil = !!tactil;
+    // con ?tactil=1 o ?tactil=0 en la dirección el modo se queda fijo (para probar)
+    this.modoFijo = /[?&]tactil=[01]/.test(location.search);
 
     this.entrada = { adelante: 0, derecha: 0, saltar: false, bajar: false, correr: false };
     this.mantener = { romper: false, poner: false };
@@ -48,6 +53,8 @@ export class Controles {
     this.modoArrastre = false;
     this.arrastre = null;
     this.ultimoEspacio = 0;
+    this.ultimoAdelante = 0;
+    this.carrera = false;   // W dos veces rápido: corre (o vuela rápido) mientras la sigas apretando
     this.toques = new Map();
     this.joyId = null;
 
@@ -82,6 +89,7 @@ export class Controles {
 
   soltarTodo() {
     this.teclas.clear();
+    this.carrera = false;
     this.mantener.romper = this.mantener.poner = false;
     this.pulsos.romper = this.pulsos.poner = false;
     this.botonSaltar = this.botonBajar = false;
@@ -106,10 +114,9 @@ export class Controles {
     this.entrada.adelante = Math.max(-1, Math.min(1, ad));
     this.entrada.derecha = Math.max(-1, Math.min(1, de));
     const shift = t.has('ShiftLeft') || t.has('ShiftRight');
-    const ctrl = t.has('ControlLeft') || t.has('ControlRight');
     this.entrada.saltar = t.has('Space') || this.botonSaltar;
     this.entrada.bajar = (volando && shift) || this.botonBajar;
-    this.entrada.correr = ctrl || (!volando && shift) || this.joy.correr;
+    this.entrada.correr = this.carrera || (!volando && shift) || this.joy.correr;
   }
 
   // ----------------------------------------------------------- Teclado
@@ -121,13 +128,22 @@ export class Controles {
       if (MOVIMIENTO.has(c)) {
         if (this.puedeJugar()) {
           e.preventDefault();
+          // la hora del evento (no la de ahora) para que un cuadro lento no lo arruine
+          const ahora = e.timeStamp || performance.now();
           if (c === 'Space' && !e.repeat && !this.teclas.has('Space') && J.dobleEspacioVuela) {
-            const ahora = performance.now();
             if (ahora - this.ultimoEspacio < 300) {
               this.alAccion('volar');
               this.ultimoEspacio = 0;
             } else {
               this.ultimoEspacio = ahora;
+            }
+          }
+          if (ADELANTE.includes(c) && !e.repeat && !ADELANTE.some((k) => this.teclas.has(k))) {
+            if (ahora - this.ultimoAdelante < 300) {
+              this.carrera = true;
+              this.ultimoAdelante = 0;
+            } else {
+              this.ultimoAdelante = ahora;
             }
           }
           this.teclas.add(c);
@@ -148,7 +164,10 @@ export class Controles {
         default: break;
       }
     });
-    window.addEventListener('keyup', (e) => { this.teclas.delete(e.code); });
+    window.addEventListener('keyup', (e) => {
+      this.teclas.delete(e.code);
+      if (ADELANTE.includes(e.code) && !ADELANTE.some((k) => this.teclas.has(k))) this.carrera = false;
+    });
     window.addEventListener('blur', () => this.soltarTodo());
   }
 
@@ -219,14 +238,33 @@ export class Controles {
     c.addEventListener('touchmove', (e) => this.toqueMovimiento(e), { passive: false });
     c.addEventListener('touchend', (e) => this.toqueFin(e), { passive: false });
     c.addEventListener('touchcancel', (e) => this.toqueFin(e), { passive: false });
-    // Si alguien toca la pantalla en una compu con pantalla táctil, cambiamos a modo táctil
-    window.addEventListener('touchstart', () => {
-      if (!this.tactil) {
-        this.tactil = true;
-        this.alAccion('modoTactil');
-      }
-    }, { passive: true });
+    // Compu con pantalla táctil: si tocas la pantalla salen los botones táctiles,
+    // y si vuelves a usar el ratón (de verdad, no un toque) regresa el modo ratón.
+    window.addEventListener('touchstart', () => this.cambiarModo(true), { passive: true });
+    const ratonDeVerdad = (e) => {
+      if (e.pointerType !== 'mouse') return;
+      if (e.type === 'pointermove' && !e.movementX && !e.movementY) return;
+      this.cambiarModo(false);
+    };
+    window.addEventListener('pointerdown', ratonDeVerdad, { capture: true, passive: true });
+    window.addEventListener('pointermove', ratonDeVerdad, { capture: true, passive: true });
     document.addEventListener('gesturestart', (e) => e.preventDefault());
+  }
+
+  cambiarModo(tactil) {
+    if (this.tactil === tactil || this.modoFijo) return;
+    this.tactil = tactil;
+    // se sueltan los dedos y botones táctiles que hubiera (las teclas no)
+    this.mantener.romper = this.mantener.poner = false;
+    this.botonSaltar = this.botonBajar = false;
+    for (const t of this.toques.values()) {
+      if (t.temporizador) clearTimeout(t.temporizador);
+      if (t.el) t.el.classList.remove('activo');
+    }
+    this.toques.clear();
+    this.soltarJoystick();
+    this.arrastre = null;
+    this.alAccion('modoTactil', tactil);
   }
 
   botonAbajo(accion) {

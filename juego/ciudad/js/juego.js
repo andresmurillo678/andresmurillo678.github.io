@@ -43,7 +43,25 @@ J.mostrarDinero = J.dinero;
   const T = Mundo.T;
 
   // ----------------------------------------------------------- Pantalla
+  // Zonas seguras (muesca y esquinas redondas de algunos celulares).
+  // Un div invisible con padding: env(safe-area-inset-*) nos dice cuánto miden.
+  const sonda = document.createElement('div');
+  sonda.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;' +
+    'padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);';
+  document.body.appendChild(sonda);
+  J.seguro = { t: 0, r: 0, b: 0, l: 0 };
+  function medirZonaSegura() {
+    try {
+      const cs = getComputedStyle(sonda);
+      const n = (v) => parseFloat(v) || 0;
+      J.seguro = { t: n(cs.paddingTop), r: n(cs.paddingRight), b: n(cs.paddingBottom), l: n(cs.paddingLeft) };
+    } catch (e) {
+      J.seguro = { t: 0, r: 0, b: 0, l: 0 };
+    }
+  }
+
   function redimensionar() {
+    medirZonaSegura();
     const dpr = Math.min(window.devicePixelRatio || 1, CONFIG.pantalla.resolucionMax);
     const w = window.innerWidth, h = window.innerHeight;
     lienzo.style.width = w + 'px';
@@ -681,6 +699,13 @@ J.mostrarDinero = J.dinero;
   bAbandonar.addEventListener('click', () => { Misiones.abandonar(); seguir(); });
   bSonido.addEventListener('click', () => { Sonido.iniciar(); Sonido.alternarSilencio(); textoSonido(); });
   ['bPausa', 'bMapa'].forEach((id) => document.getElementById(id).addEventListener('pointerdown', (e) => e.stopPropagation()));
+  // Después de usar un botón con el mouse, se le quita el foco. Si no, al
+  // pulsar Enter (que también sirve para subir/bajar) el navegador volvería
+  // a "picar" ese botón (abriría otra vez el mapa o la pausa).
+  ['barra', 'pausa'].forEach((id) => document.getElementById(id).addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('button');
+    if (b) b.blur();
+  }));
 
   function iniciarPartida() {
     if (J.modo !== 'titulo') return;
@@ -711,6 +736,9 @@ J.mostrarDinero = J.dinero;
     if (document.hidden) {
       if (J.modo === 'jugando' || J.modo === 'mapa') pausar();
       J.guardarPartida();
+      Sonido.dormir(); // que la radio no siga sonando con el juego escondido
+    } else {
+      Sonido.despertar();
     }
   });
 

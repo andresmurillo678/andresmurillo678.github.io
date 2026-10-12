@@ -240,7 +240,12 @@ const HUD = (() => {
     Util.rectRedondo(g, x, y, 5 * u, h, 3);
     g.fill();
     texto(g, info.titulo, x + 14 * u, y + 15 * u, 12.5 * u, info.color, 800, 'left');
-    textoNormal(g, info.linea, x + 14 * u, y + 34 * u, 12 * u, '#ffffff', 'left');
+    // Si el panel es angosto, la letra se achica un poco para que quepa
+    let tamLinea = 12 * u;
+    g.font = `600 ${Math.round(tamLinea)}px ${FUENTE_TEXTO}`;
+    const anchoLinea = g.measureText(info.linea).width, cabe = w - 24 * u;
+    if (anchoLinea > cabe) tamLinea = Math.max(8, tamLinea * cabe / anchoLinea);
+    textoNormal(g, info.linea, x + 14 * u, y + 34 * u, tamLinea, '#ffffff', 'left');
     const obj = Misiones.objetivo();
     const p = J.jugador.carro || J.jugador;
     if (obj) {
@@ -315,7 +320,7 @@ const HUD = (() => {
   function pista(g, W, H, u) {
     const p = J.pistaInfo;
     if (!p || p.t <= 0) return;
-    const y = Entrada.tactil ? (W < 600 ? H - 230 * u : H * 0.6) : H - 70;
+    const y = Entrada.tactil ? (H > W ? H - 230 * u : H * 0.6) : H - 70;
     g.save();
     g.globalAlpha = Math.min(1, p.t * 2);
     g.font = `700 ${Math.round(14 * u)}px ${FUENTE_TEXTO}`;
@@ -378,11 +383,11 @@ const HUD = (() => {
     g.globalAlpha = 1;
   }
 
-  function mapaCompleto(g, W, H, u, t) {
+  function mapaCompleto(g, W, H, u, t, s) {
     g.fillStyle = 'rgba(5,3,15,0.92)';
     g.fillRect(0, 0, W, H);
     const angosto = W < 600;
-    const arriba = 60, abajo = angosto ? 92 : 70;
+    const arriba = 60 + Math.max(0, s.t - 10), abajo = (angosto ? 92 : 70) + s.b;
     const tam = Math.max(100, Math.min(W - 24, H - arriba - abajo));
     const x0 = (W - tam) / 2, y0 = arriba + (H - arriba - abajo - tam) / 2;
     const k = tam / Mundo.TAM;
@@ -425,32 +430,52 @@ const HUD = (() => {
   }
 
   // ----------------------------------------------------------- Todo junto
+  // Dónde termina la barra de botones de arriba (← Menú, II, MAPA).
+  // Se mide de vez en cuando (no en cada cuadro) para no gastar.
+  let finBarra = 0, proximaMedida = 0;
+  function medirBarra() {
+    const ahora = performance.now();
+    if (ahora >= proximaMedida) {
+      proximaMedida = ahora + 1000;
+      const b = document.getElementById('barra');
+      if (b) finBarra = b.getBoundingClientRect().right;
+    }
+    return finBarra || 250;
+  }
+
   function dibujar(g, W, H, t) {
     const u = Util.limitar(Math.min(W, H) / 520, 0.72, 1.2);
     J.hudEscala = u;
-    if (J.modo === 'mapa') { mapaCompleto(g, W, H, u, t); return; }
+    // Márgenes que respetan la muesca / esquinas redondas del celular
+    const s = J.seguro || { t: 0, r: 0, b: 0, l: 0 };
+    const mIzq = 14 + s.l, mDer = 14 + s.r, mAbajo = 14 + s.b;
+    const bajarArriba = Math.max(0, s.t - 10); // la barra baja lo mismo (top: max(10px, inset))
+    if (J.modo === 'mapa') { mapaCompleto(g, W, H, u, t, s); return; }
     if (J.modo === 'atrapado') { pantallaAtrapado(g, W, H, u, t); return; }
 
-    flechaObjetivo(g, W, H, u, t);
     etiquetaSubir(g, u);
 
     const R = Math.round(Util.limitar(Math.min(W, H) * 0.14, 48, 92));
-    const mmx = W - R - 14, mmy = R + 14;
+    const mmx = W - R - mDer, mmy = R + 14 + bajarArriba;
     minimapa(g, mmx, mmy, R, t);
     J.zonaMinimapa = { x: mmx, y: mmy, r: R };
     relojDia(g, mmx, mmy + R + 16 * u, u);
 
-    const finIzq = dineroYEstrellas(g, 14, 64, u, t);
+    const finIzq = dineroYEstrellas(g, mIzq, 64 + bajarArriba, u, t);
 
     const info = Misiones.info();
-    const ancho = W >= 700;
     if (info) {
-      if (ancho) {
-        const w = Math.min(470 * u, W - 2 * (2 * R + 40) - 190 * u);
-        panelMision(g, W / 2 - Math.max(w, 280 * u) / 2, 12, Math.max(w, 280 * u), u, info, t);
+      // Si cabe, el panel de misión va arriba al centro, entre la barra y el
+      // minimapa (pantallas anchas y celulares acostados). Si no cabe
+      // (celular parado), va a lo ancho debajo del minimapa.
+      const a = medirBarra() + 10, b = mmx - R - 10;
+      const w = Math.min(470 * u, b - a);
+      if (w >= 190) {
+        const x = Util.limitar(W / 2 - w / 2, a, b - w);
+        panelMision(g, x, 12 + bajarArriba, w, u, info, t);
       } else {
         const y = Math.max(mmy + R + 32 * u, finIzq + 8);
-        panelMision(g, 10, y, W - 20, u, info, t);
+        panelMision(g, mIzq - 4, y, W - mIzq - mDer + 8, u, info, t);
       }
     }
 
@@ -458,13 +483,17 @@ const HUD = (() => {
       const w = 170 * u;
       let x, y;
       if (Entrada.tactil) {
-        if (W < 600) { x = W - w - 12; y = H - 172 - 82 * u; }
-        else { x = W / 2 - w / 2; y = H - 74 * u - 12; }
+        // Parado: a la derecha, encima de los botones. Acostado: abajo al centro.
+        if (H > W) { x = W - w - 12 - s.r; y = H - 172 - 82 * u - s.b; }
+        else { x = W / 2 - w / 2; y = H - 74 * u - 12 - s.b; }
       } else {
-        x = 14; y = H - 74 * u - 14;
+        x = mIzq; y = H - 74 * u - mAbajo;
       }
       panelCarro(g, x, y, w, u);
     }
+
+    // La flecha va al final para que ningún panel la tape
+    flechaObjetivo(g, W, H, u, t);
 
     if (J.modo === 'pausa') return;
     alertaPolicia(g, W, H, u, t);

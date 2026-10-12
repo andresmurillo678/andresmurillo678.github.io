@@ -69,7 +69,7 @@ CARAS.forEach((c, f) => {
 // "Luz del cielo": si un lugar tiene bloques encima (cuevas, bajo los
 // árboles), se ve más oscuro. Entre más hondo, más oscuro.
 const LUZ_CIELO = new Float32Array(300);
-for (let d = 0; d < LUZ_CIELO.length; d++) LUZ_CIELO[d] = d <= 0 ? 1 : 0.3 + 0.7 * Math.exp(-d * 0.14);
+for (let d = 0; d < LUZ_CIELO.length; d++) LUZ_CIELO[d] = d <= 0 ? 1 : 0.36 + 0.64 * Math.exp(-d * 0.14);
 let CIMA = null; // altura del bloque más alto que da sombra, por columna (18 x 18)
 
 function luzEn(x, y, z) {
@@ -142,6 +142,7 @@ function seVe(b, n, hojasDetalladas) {
   if (n === B.AIRE) return true;
   if (OPACO[n]) return false;
   if (n === b) return hojasDetalladas && b === B.HOJAS;
+  if (DIBUJO[b] === DIBUJO_AGUA && DIBUJO[n] === DIBUJO_AGUA) return false; // agua del mar junto a agua puesta
   return true;
 }
 
@@ -186,7 +187,7 @@ export function mallar(vol, cima, yMax, hojasDetalladas) {
         if (dib === DIBUJO_PLANTA) { planta(recorte, x, y, z, b); continue; }
         const lista = dib === DIBUJO_AGUA ? agua : dib === DIBUJO_RECORTE ? recorte : solido;
         // el agua de hasta arriba queda un poquito más bajita
-        const tope = dib === DIBUJO_AGUA && vol[vi + PCAPA] !== b ? 0.875 : 1;
+        const tope = dib === DIBUJO_AGUA && DIBUJO[vol[vi + PCAPA]] !== DIBUJO_AGUA ? 0.875 : 1;
 
         for (let f = 0; f < 6; f++) {
           if (!seVe(b, vol[vi + VECINO[f]], hojasDetalladas)) continue;

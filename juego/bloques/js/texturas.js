@@ -455,7 +455,8 @@ function aLienzo(datos, ancho, alto) {
   const c = document.createElement('canvas');
   c.width = ancho;
   c.height = alto;
-  c.getContext('2d').putImageData(new ImageData(datos, ancho, alto), 0, 0);
+  // "willReadFrequently": el lienzo vive en memoria normal (así subirlo a la tarjeta de video es directo)
+  c.getContext('2d', { willReadFrequently: true }).putImageData(new ImageData(datos, ancho, alto), 0, 0);
   return c;
 }
 
