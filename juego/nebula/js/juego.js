@@ -300,7 +300,28 @@
   // ----------------------------------------------------------- Botones (HUD)
   const BOTON_PAUSA = { x: W - 30, y: 30, r: 20 };
   const BOTON_SONIDO = { x: W - 76, y: 30, r: 20 };
+  const BOTON_MUSICA = { x: W - 122, y: 30, r: 20 };
   const tocado = (t, b) => Math.hypot(t.x - b.x, t.y - b.y) < b.r + 6;
+
+  // Botón "← MENÚ" para volver a la lista de juegos. No sale mientras
+  // juegas (para no tapar los puntos): solo en el inicio, la pausa y el final.
+  const MENU_INICIO = { x: 14, y: 13, w: 104, h: 34 };
+  const MENU_PAUSA = { x: W / 2 - 80, y: H * 0.6, w: 160, h: 42 };
+  const MENU_FIN = { x: W / 2 - 80, y: H * 0.8, w: 160, h: 42 };
+  const tocadoRect = (t, b) =>
+    t.x > b.x - 6 && t.x < b.x + b.w + 6 && t.y > b.y - 6 && t.y < b.y + b.h + 6;
+
+  function botonMenu() {
+    if (J.modo === 'menu') return MENU_INICIO;
+    if (J.modo === 'pausa') return MENU_PAUSA;
+    if (J.modo === 'fin' && J.tiempoMenu > 1) return MENU_FIN;
+    return null;
+  }
+
+  function irAlMenu() {
+    guardarAlSalir();
+    window.location.href = '../';
+  }
 
   // ----------------------------------------------------------- Actualizar
   function actualizar(dt) {
@@ -308,10 +329,14 @@
     let tocoBoton = false;
 
     for (const t of toques) {
+      const menu = botonMenu();
       if (tocado(t, BOTON_SONIDO)) { Sonido.alternar(); tocoBoton = true; }
+      else if (tocado(t, BOTON_MUSICA)) { Musica.alternar(); tocoBoton = true; }
       else if (J.modo === 'jugando' && tocado(t, BOTON_PAUSA)) { J.modo = 'pausa'; tocoBoton = true; }
+      else if (menu && tocadoRect(t, menu)) { irAlMenu(); tocoBoton = true; }
     }
     if (Entrada.pulso('KeyM')) Sonido.alternar();
+    if (Entrada.pulso('KeyN')) Musica.alternar();
 
     const aceptar = (!tocoBoton && toques.length > 0) || Entrada.pulso('Enter', 'Space');
 
@@ -526,7 +551,7 @@
     g.restore();
   }
 
-  function dibujarBoton(b, simbolo) {
+  function dibujarBoton(b, simbolo, tachado) {
     g.save();
     g.globalAlpha = 0.85;
     g.strokeStyle = COL.textoSuave;
@@ -534,8 +559,66 @@
     g.beginPath();
     g.arc(b.x, b.y, b.r, 0, Math.PI * 2);
     g.stroke();
-    g.restore();
+    if (tachado) g.globalAlpha = 0.45;
     texto(simbolo, b.x, b.y + 1, 14, COL.texto, 800);
+    if (tachado) {
+      // Una raya cruzada: "apagado"
+      g.globalAlpha = 0.95;
+      g.strokeStyle = COL.enemigos.normal;
+      g.lineWidth = 2.5;
+      g.lineCap = 'round';
+      g.beginPath();
+      g.moveTo(b.x - b.r * 0.62, b.y + b.r * 0.62);
+      g.lineTo(b.x + b.r * 0.62, b.y - b.r * 0.62);
+      g.stroke();
+    }
+    g.restore();
+  }
+
+  function dibujarBotonesAudio() {
+    dibujarBoton(BOTON_SONIDO, Sonido.silenciado ? '×' : '♪');
+    // Si todo está en silencio, la música tampoco suena: se ve apagada
+    dibujarBoton(BOTON_MUSICA, '♫', !Musica.activa || Sonido.silenciado);
+  }
+
+  // Botón con forma de píldora y una flecha "←" dibujada a mano
+  // (la letra Orbitron no trae flechas)
+  function dibujarPildora(b, etiqueta) {
+    const r = b.h / 2;
+    g.save();
+    g.beginPath();
+    g.moveTo(b.x + r, b.y);
+    g.lineTo(b.x + b.w - r, b.y);
+    g.arc(b.x + b.w - r, b.y + r, r, -Math.PI / 2, Math.PI / 2);
+    g.lineTo(b.x + r, b.y + b.h);
+    g.arc(b.x + r, b.y + r, r, Math.PI / 2, Math.PI * 1.5);
+    g.closePath();
+    g.fillStyle = 'rgba(154, 140, 255, 0.12)';
+    g.fill();
+    g.globalAlpha = 0.9;
+    g.strokeStyle = COL.textoSuave;
+    g.lineWidth = 2;
+    g.stroke();
+
+    g.font = `800 13px ${FUENTE}`;
+    const flecha = 12;
+    const hueco = 7;
+    const inicio = b.x + (b.w - (flecha + hueco + g.measureText(etiqueta).width)) / 2;
+    const cy = b.y + b.h / 2;
+    g.globalAlpha = 1;
+    g.strokeStyle = COL.texto;
+    g.lineWidth = 2.2;
+    g.lineCap = 'round';
+    g.lineJoin = 'round';
+    g.beginPath();
+    g.moveTo(inicio + flecha, cy);
+    g.lineTo(inicio, cy);
+    g.moveTo(inicio + 5, cy - 5);
+    g.lineTo(inicio, cy);
+    g.lineTo(inicio + 5, cy + 5);
+    g.stroke();
+    g.restore();
+    texto(etiqueta, inicio + flecha + hueco, cy + 1, 13, COL.texto, 800, 'left');
   }
 
   function dibujarHUD() {
@@ -554,7 +637,7 @@
     }
 
     dibujarBoton(BOTON_PAUSA, 'II');
-    dibujarBoton(BOTON_SONIDO, Sonido.silenciado ? '×' : '♪');
+    dibujarBotonesAudio();
 
     if (J.oleada > 0) texto(`OLEADA ${J.oleada}`, W / 2, 26, 12, COL.textoSuave, 500);
 
@@ -646,15 +729,20 @@
     texto('TOCA PARA JUGAR', W / 2, H * 0.68, 20, COL.texto);
     g.restore();
 
-    texto('Arrastra el dedo o usa flechas / WASD', W / 2, H * 0.76, 12, COL.textoSuave, 500);
-    texto('La nave dispara sola  ·  P pausa  ·  M sonido', W / 2, H * 0.79, 12, COL.textoSuave, 500);
-    if (J.record > 0) texto(`RÉCORD  ${J.record}`, W / 2, H * 0.88, 16, COL.acento);
+    texto('Arrastra el dedo o usa flechas / WASD', W / 2, H * 0.75, 12, COL.textoSuave, 500);
+    texto('La nave dispara sola', W / 2, H * 0.78, 12, COL.textoSuave, 500);
+    texto('P pausa  ·  M sonido  ·  N música', W / 2, H * 0.81, 12, COL.textoSuave, 500);
+    if (J.record > 0) texto(`RÉCORD  ${J.record}`, W / 2, H * 0.89, 16, COL.acento);
+
+    dibujarPildora(MENU_INICIO, 'MENÚ');
   }
 
   function dibujarPausa() {
     velo();
     textoBrillante('PAUSA', W / 2, H * 0.42, 44, COL.jugador);
     texto('Toca para continuar', W / 2, H * 0.52, 16, COL.texto, 500);
+    dibujarPildora(MENU_PAUSA, 'MENÚ');
+    texto('M sonido  ·  N música', W / 2, H * 0.7, 12, COL.textoSuave, 500);
   }
 
   function dibujarFin() {
@@ -671,6 +759,7 @@
       g.globalAlpha = 0.6 + Math.sin(J.tiempoMenu * 4) * 0.4;
       texto('TOCA PARA JUGAR OTRA VEZ', W / 2, H * 0.72, 18, COL.texto);
       g.restore();
+      dibujarPildora(MENU_FIN, 'MENÚ');
     }
   }
 
@@ -690,12 +779,23 @@
 
     if (J.modo === 'menu') {
       dibujarMenu();
-      dibujarBoton(BOTON_SONIDO, Sonido.silenciado ? '×' : '♪');
+      dibujarBotonesAudio();
     } else {
       dibujarHUD();
       if (J.modo === 'pausa') dibujarPausa();
       if (J.modo === 'fin') dibujarFin();
     }
+  }
+
+  // ----------------------------------------------------------- Música
+  // Elige la canción según lo que pasa: menú, partida, jefe o final.
+  // (Musica cambia de canción al empezar el siguiente compás.)
+  function sincronizarMusica() {
+    let animo = 'menu';
+    if (J.modo === 'fin' || (J.modo !== 'menu' && J.jugador && !J.jugador.vivo)) animo = 'fin';
+    else if (J.modo !== 'menu') animo = J.jefe ? 'jefe' : 'juego';
+    Musica.animo(animo);
+    Musica.pausar(J.modo === 'pausa');
   }
 
   // ----------------------------------------------------------- Bucle
@@ -723,6 +823,7 @@
     if (dt < 0) dt = 0;
     if (dt > 1 / 30) dt = 1 / 30; // si el equipo se traba, no hay saltos raros
     actualizar(dt);
+    sincronizarMusica();
     dibujar(dt);
     requestAnimationFrame(bucle);
   }
