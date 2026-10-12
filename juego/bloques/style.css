@@ -1,0 +1,523 @@
+/* =============================================================
+   MUNDO DE BLOQUES — estilos
+   Colores principales (cámbialos aquí):
+     verde neón  #7dd957   ·  cian  #3df5ff  ·  fondo  #0b1a10
+   ============================================================= */
+:root {
+  --verde: #7dd957;
+  --cian: #3df5ff;
+  --fondo: #0b1a10;
+  --tarjeta: rgba(8, 16, 14, 0.86);
+  --texto: #ffffff;
+  --suave: #b9e8a8;
+  --seguro-abajo: env(safe-area-inset-bottom, 0px);
+  --seguro-arriba: env(safe-area-inset-top, 0px);
+  --seguro-izq: env(safe-area-inset-left, 0px);
+  --seguro-der: env(safe-area-inset-right, 0px);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: Orbitron, ui-monospace, Menlo, Consolas, monospace;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+#lienzo {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+.oculto { display: none !important; }
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------------------------------------------------------- Volver al menú */
+.volver {
+  position: fixed;
+  top: calc(10px + var(--seguro-arriba));
+  left: calc(10px + var(--seguro-izq));
+  z-index: 60;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(5, 10, 8, 0.7);
+  border: 2px solid rgba(125, 217, 87, 0.7);
+  color: var(--verde);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  letter-spacing: 1px;
+  box-shadow: 0 0 12px rgba(125, 217, 87, 0.35);
+}
+.volver:hover, .volver:focus-visible { background: rgba(125, 217, 87, 0.2); outline: none; }
+
+/* ---------------------------------------------------------- HUD */
+#hud {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+}
+
+#mira {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  transform: translate(-50%, -50%);
+  mix-blend-mode: difference;
+}
+#mira::before, #mira::after {
+  content: '';
+  position: absolute;
+  background: #fff;
+}
+#mira::before { left: 10px; top: 0; width: 2px; height: 22px; }
+#mira::after { left: 0; top: 10px; width: 22px; height: 2px; }
+
+#bajoAgua {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(30, 90, 200, 0.25), rgba(10, 40, 120, 0.55));
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+#bajoAgua.visible { opacity: 1; }
+
+#depuracion {
+  position: absolute;
+  top: calc(52px + var(--seguro-arriba));
+  left: calc(10px + var(--seguro-izq));
+  margin: 0;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #e8ffe0;
+  white-space: pre;
+}
+
+#ayuda {
+  position: absolute;
+  top: calc(12px + var(--seguro-arriba));
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(92vw, 760px);
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.55);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  color: #f0fff0;
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+#ayuda b { color: var(--verde); }
+#ayuda.visible { opacity: 1; }
+
+#aviso {
+  position: absolute;
+  top: 24%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--cian);
+  text-shadow: 0 0 10px rgba(61, 245, 255, 0.6);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+#aviso.visible { opacity: 1; }
+
+#nombreBloque {
+  position: absolute;
+  left: 50%;
+  bottom: calc(84px + var(--seguro-abajo));
+  transform: translateX(-50%);
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 0 #000, 0 0 8px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+#nombreBloque.visible { opacity: 1; }
+
+/* ---------------------------------------------------------- Barra de bloques */
+#barra {
+  --tam: 52px;
+  position: absolute;
+  left: 50%;
+  bottom: calc(12px + var(--seguro-abajo));
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+}
+.ranura {
+  position: relative;
+  width: var(--tam);
+  height: var(--tam);
+  padding: 4px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  background: rgba(30, 30, 30, 0.55);
+  touch-action: none;
+}
+.ranura img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.ranura .num {
+  position: absolute;
+  top: 1px;
+  left: 3px;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.75);
+  text-shadow: 0 1px 0 #000;
+  pointer-events: none;
+}
+.ranura.elegida {
+  border-color: var(--verde);
+  background: rgba(125, 217, 87, 0.25);
+  box-shadow: 0 0 12px rgba(125, 217, 87, 0.8);
+}
+
+/* ---------------------------------------------------------- Controles táctiles */
+#tactil {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  touch-action: none;
+}
+body.tactil #tactil { display: block; }
+body.enTitulo #tactil { display: none; }
+
+#joystick {
+  position: absolute;
+  left: calc(86px + var(--seguro-izq));
+  top: calc(100% - 196px - var(--seguro-abajo));
+  width: 124px;
+  height: 124px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  opacity: 0.7;
+}
+#joystick.activo { opacity: 1; border-color: rgba(125, 217, 87, 0.8); }
+#palanca {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 54px;
+  height: 54px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+.btnTactil {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0;
+  padding: 0;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.btnTactil.activo { background: rgba(125, 217, 87, 0.45); border-color: var(--verde); }
+
+#btnSaltar {
+  right: calc(16px + var(--seguro-der));
+  bottom: calc(80px + var(--seguro-abajo));
+  width: 86px;
+  height: 86px;
+  font-size: 13px;
+}
+#btnRomper {
+  right: calc(114px + var(--seguro-der));
+  bottom: calc(86px + var(--seguro-abajo));
+  width: 68px;
+  height: 68px;
+  border-color: rgba(255, 140, 120, 0.8);
+}
+#btnPoner {
+  right: calc(26px + var(--seguro-der));
+  bottom: calc(178px + var(--seguro-abajo));
+  width: 68px;
+  height: 68px;
+  border-color: rgba(120, 220, 255, 0.8);
+}
+#btnVolar {
+  right: calc(118px + var(--seguro-der));
+  bottom: calc(172px + var(--seguro-abajo));
+  width: 56px;
+  height: 56px;
+  font-size: 10px;
+}
+#btnBajar {
+  right: calc(196px + var(--seguro-der));
+  bottom: calc(92px + var(--seguro-abajo));
+  width: 56px;
+  height: 56px;
+  font-size: 10px;
+  display: none;
+}
+body.volando #btnBajar { display: flex; }
+body.volando #btnVolar { background: rgba(61, 245, 255, 0.35); border-color: var(--cian); }
+
+#btnPausa, #btnInventario {
+  top: calc(10px + var(--seguro-arriba));
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 16px;
+}
+#btnPausa { right: calc(10px + var(--seguro-der)); }
+#btnInventario { right: calc(62px + var(--seguro-der)); font-size: 20px; }
+
+/* En el celular, la barra es más chica para que quepa */
+body.tactil #barra { --tam: min(42px, calc((100vw - 52px) / 9)); gap: 3px; padding: 3px; }
+body.tactil #nombreBloque { bottom: calc(66px + var(--seguro-abajo)); }
+body.tactil #ayuda { top: calc(64px + var(--seguro-arriba)); font-size: 12px; }
+
+/* Celular acostado (poca altura) */
+@media (max-height: 500px) {
+  #joystick { top: calc(100% - 128px - var(--seguro-abajo)); width: 112px; height: 112px; }
+  #btnSaltar { bottom: calc(16px + var(--seguro-abajo)); width: 78px; height: 78px; }
+  #btnRomper { bottom: calc(22px + var(--seguro-abajo)); right: calc(104px + var(--seguro-der)); width: 62px; height: 62px; }
+  #btnPoner { bottom: calc(106px + var(--seguro-abajo)); right: calc(24px + var(--seguro-der)); width: 62px; height: 62px; }
+  #btnVolar { bottom: calc(100px + var(--seguro-abajo)); right: calc(108px + var(--seguro-der)); width: 52px; height: 52px; }
+  #btnBajar { bottom: calc(26px + var(--seguro-abajo)); right: calc(178px + var(--seguro-der)); width: 52px; height: 52px; }
+  body.tactil #barra { --tam: min(40px, calc((100vw - 380px) / 9)); }
+  body.tactil #nombreBloque { bottom: calc(60px + var(--seguro-abajo)); }
+  body.tactil #ayuda { top: calc(10px + var(--seguro-arriba)); max-width: calc(100vw - 400px); }
+}
+
+/* ---------------------------------------------------------- Pantallas (menús) */
+.pantalla {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(56px + var(--seguro-arriba)) 16px calc(16px + var(--seguro-abajo));
+  background: rgba(3, 8, 6, 0.55);
+  overflow-y: auto;
+  touch-action: pan-y;
+}
+#pantallaTitulo {
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+.tarjeta {
+  width: min(420px, 100%);
+  margin: auto;
+  padding: 22px 20px 18px;
+  border-radius: 18px;
+  background: var(--tarjeta);
+  border: 2px solid rgba(125, 217, 87, 0.65);
+  box-shadow: 0 0 34px rgba(125, 217, 87, 0.3);
+  text-align: center;
+}
+.tarjeta.ancha { width: min(640px, 100%); }
+
+.titulo {
+  margin: 4px 0 6px;
+  font-size: clamp(30px, 9vw, 46px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: 2px;
+  color: var(--verde);
+  text-shadow: 0 0 18px rgba(125, 217, 87, 0.7), 3px 3px 0 #1f4a12;
+}
+.titulo span { display: block; }
+.titulo span + span { font-size: 0.62em; color: #e8ffd8; text-shadow: 0 0 14px rgba(125, 217, 87, 0.6), 2px 2px 0 #1f4a12; }
+
+h2 {
+  margin: 0 0 14px;
+  font-size: 24px;
+  color: var(--verde);
+  text-shadow: 0 0 14px rgba(125, 217, 87, 0.6);
+  letter-spacing: 2px;
+}
+
+.sub {
+  margin: 0 0 18px;
+  font-size: 13px;
+  color: var(--suave);
+  letter-spacing: 1px;
+}
+
+.tarjeta button {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 2px solid rgba(125, 217, 87, 0.7);
+  background: rgba(125, 217, 87, 0.08);
+  color: #eaffde;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+.tarjeta button:hover, .tarjeta button:focus-visible {
+  background: rgba(125, 217, 87, 0.22);
+  box-shadow: 0 0 16px rgba(125, 217, 87, 0.5);
+  outline: none;
+}
+.tarjeta button:active { transform: scale(0.98); }
+.tarjeta button.principal {
+  background: var(--verde);
+  color: #0b1a10;
+  border-color: var(--verde);
+  box-shadow: 0 0 18px rgba(125, 217, 87, 0.55);
+}
+
+.fila { display: flex; gap: 8px; align-items: center; }
+.fila > button { flex: 1; }
+.fila.distancia { justify-content: center; margin: 8px 0; font-size: 13px; color: var(--suave); }
+.fila.distancia button { flex: 0 0 48px; width: 48px; margin: 0; padding: 8px 0; font-size: 18px; }
+.fila.distancia b { min-width: 28px; font-size: 18px; color: #fff; }
+.fila.distancia span { margin-right: 6px; }
+
+.info {
+  margin: 4px 0 8px;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size: 13px;
+  color: var(--suave);
+}
+.pista {
+  margin: 14px 0 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(234, 255, 222, 0.7);
+}
+body.tactil .solo-compu { display: none; }
+body:not(.tactil) .solo-tactil { display: none; }
+
+#panelNuevo {
+  margin: 6px 0 4px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  text-align: left;
+}
+#panelNuevo label { display: block; margin-bottom: 6px; font-size: 12px; color: var(--suave); }
+#campoSemilla {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 2px solid rgba(125, 217, 87, 0.6);
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 16px;
+  -webkit-user-select: text;
+  user-select: text;
+  touch-action: manipulation;
+}
+#campoSemilla:focus { outline: none; border-color: var(--cian); }
+
+/* ---------------------------------------------------------- Inventario */
+#rejillaInventario {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 8px;
+  margin: 10px 0 6px;
+}
+.tarjeta .bloqueMenu {
+  margin: 0;
+  padding: 8px 4px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+.bloqueMenu img { width: 44px; height: 44px; image-rendering: pixelated; pointer-events: none; }
+
+/* ---------------------------------------------------------- Cargando */
+#pantallaCarga {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 12, 8, 0.75);
+  font-size: 16px;
+  color: var(--verde);
+  text-shadow: 0 0 12px rgba(125, 217, 87, 0.6);
+}
+.carga {
+  width: min(280px, 70vw);
+  height: 12px;
+  margin-top: 10px;
+  border-radius: 6px;
+  border: 2px solid rgba(125, 217, 87, 0.7);
+  overflow: hidden;
+}
+#barraCarga { height: 100%; width: 0; background: var(--verde); transition: width 0.15s; }
+
+/* Ocultar la mira y la barra en el título */
+body.enTitulo #hud { display: none; }
