@@ -39,9 +39,9 @@
     }
     .lista {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
       gap: 20px;
-      max-width: 960px;
+      max-width: 1180px;
       margin: 0 auto;
     }
     .juego {
@@ -85,6 +85,13 @@
       color: #05030f;
       font-weight: 800;
       font-size: 14px;
+    }
+    .pista {
+      text-align: center;
+      color: var(--suave);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      font-size: 14px;
+      margin: 24px 0 0;
     }
     .pie {
       text-align: center;
@@ -141,7 +148,7 @@
       </svg>
       <div class="info">
         <h2>CIUDAD LIBRE</h2>
-        <p>Recorre la ciudad a pie o en carro, haz misiones, gana dinero y escapa de la policía.</p>
+        <p>Ciudad en 3D: camina, roba carros, haz misiones, gana dinero y escapa de la policía.</p>
         <span class="jugar">JUGAR</span>
       </div>
     </a>
@@ -168,8 +175,92 @@
         <span class="jugar">JUGAR</span>
       </div>
     </a>
+
+    <a class="juego" href="frente/" style="--color:#e0b84a">
+      <svg viewBox="0 0 320 160" aria-hidden="true">
+        <defs>
+          <linearGradient id="cieloFrente" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#f2b46b"/><stop offset="1" stop-color="#7b5a6e"/>
+          </linearGradient>
+        </defs>
+        <rect width="320" height="160" fill="url(#cieloFrente)"/>
+        <path d="M0 112 L60 96 L120 106 L190 90 L250 104 L320 94 V160 H0 Z" fill="#5a5a3a"/>
+        <path d="M0 128 L80 118 L160 126 L240 116 L320 124 V160 H0 Z" fill="#4a4a2e"/>
+        <g fill="#3b4a2a" stroke="#22281a" stroke-width="2" stroke-linejoin="round">
+          <rect x="70" y="112" width="92" height="22" rx="6"/>
+          <path d="M92 112 L100 96 L140 96 L148 112 Z"/>
+          <rect x="140" y="100" width="62" height="6" rx="2"/>
+        </g>
+        <g fill="#22281a"><circle cx="84" cy="134" r="7"/><circle cx="104" cy="134" r="7"/><circle cx="124" cy="134" r="7"/><circle cx="144" cy="134" r="7"/></g>
+        <circle cx="210" cy="103" r="5" fill="#ffd46b"/><circle cx="222" cy="103" r="3" fill="#fff1b8" opacity="0.8"/>
+        <g fill="#2e3440" stroke="#1a1d24" stroke-width="1.5" stroke-linejoin="round">
+          <path d="M214 38 L262 34 L270 38 L262 42 L214 40 Z"/>
+          <path d="M236 38 L228 22 L240 22 L248 38 Z"/>
+          <path d="M236 39 L228 54 L240 54 L248 39 Z"/>
+          <path d="M214 38 L208 30 L214 30 L220 38 Z"/>
+        </g>
+        <g stroke="#ffe08a" stroke-width="2" stroke-linecap="round" opacity="0.9">
+          <line x1="272" y1="38" x2="300" y2="36"/><line x1="276" y1="41" x2="306" y2="42"/>
+        </g>
+        <g fill="#c9c2b0" opacity="0.6"><circle cx="40" cy="80" r="10"/><circle cx="52" cy="74" r="12"/><circle cx="64" cy="82" r="9"/></g>
+      </svg>
+      <div class="info">
+        <h2>FRENTE DE ACERO</h2>
+        <p>Batallas de tanques y aviones en 3D: apunta, dispara y conquista las zonas del mapa.</p>
+        <span class="jugar">JUGAR</span>
+      </div>
+    </a>
   </main>
 
+  <p class="pista" id="pista-mando" hidden>🎮 Usa la cruceta o el stick para elegir y <b id="boton-a">A</b> para jugar</p>
+
   <p class="pie"><a href="../">← volver a mi página</a></p>
+
+  <script src="comun/mando.js"></script>
+  <script>
+    // Elegir juego con el control de consola
+    (() => {
+      const tarjetas = Array.from(document.querySelectorAll('.juego'));
+      const pista = document.getElementById('pista-mando');
+      const botonA = document.getElementById('boton-a');
+      let actual = -1;
+      let espera = 0;
+      let ultimo = performance.now();
+
+      function enfocar(n) {
+        actual = (n + tarjetas.length) % tarjetas.length;
+        tarjetas[actual].focus();
+        tarjetas[actual].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+
+      function bucle(ahora) {
+        const dt = (ahora - ultimo) / 1000;
+        ultimo = ahora;
+        Mando.actualizar();
+        pista.hidden = !Mando.conectado;
+        if (Mando.conectado) {
+          botonA.textContent = Mando.nombre('A');
+          if (espera > 0) espera -= dt;
+          const x = Mando.eje('IX');
+          const y = Mando.eje('IY');
+          let paso = 0;
+          if (Mando.pulso('DER') || Mando.pulso('ABAJO')) paso = 1;
+          else if (Mando.pulso('IZQ') || Mando.pulso('ARRIBA')) paso = -1;
+          else if (espera <= 0 && Math.max(Math.abs(x), Math.abs(y)) > 0.6) {
+            paso = (Math.abs(x) > Math.abs(y) ? x : y) > 0 ? 1 : -1;
+            espera = 0.3;
+          }
+          if (paso) enfocar(actual < 0 ? 0 : actual + paso);
+          if (Mando.pulso('A') || Mando.pulso('START')) {
+            if (actual < 0) enfocar(0);
+            else tarjetas[actual].click();
+          }
+          if (Mando.pulso('B')) window.location.href = '../';
+        }
+        requestAnimationFrame(bucle);
+      }
+      requestAnimationFrame(bucle);
+    })();
+  </script>
 </body>
 </html>
