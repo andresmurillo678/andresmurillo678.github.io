@@ -96,6 +96,18 @@ const CONFIG = {
   },
 
   audio: {
-    volumen: 0.35,      // 0 a 1
+    volumen: 0.35,      // 0 a 1 (volumen de los efectos: disparos, explosiones...)
+  },
+
+  // Música de fondo. También se hace con código (está en js/musica.js).
+  // En el juego: tecla N o el botón ♫ para prenderla/apagarla.
+  musica: {
+    activa: true,       // false = empieza sin música (se recuerda lo que elijas con N)
+    volumen: 0.25,      // 0 a 1, aparte del volumen de los efectos. Si pones el
+                        // mismo número que en audio.volumen, suenan parecido;
+                        // más bajo = la música queda debajo de los disparos.
+    tempo: 112,         // golpes por minuto de la canción de la partida.
+                        // Las otras (menú, jefe, fin) van más lento o más rápido
+                        // a partir de este número.
   },
 };

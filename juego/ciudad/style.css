@@ -1,0 +1,289 @@
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #05030f;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  font-family: Orbitron, ui-monospace, Menlo, Consolas, monospace;
+  color: #fff;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+}
+
+#lienzo {
+  position: fixed;
+  inset: 0;
+  display: block;
+  touch-action: none;
+}
+
+.oculto { display: none !important; }
+
+/* ---------------------------------------------------------- Barra de arriba */
+#barra {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  z-index: 40;
+  display: flex;
+  gap: 8px;
+}
+
+#barra a, #barra button {
+  font: 800 13px Orbitron, ui-monospace, monospace;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(10, 8, 25, 0.78);
+  color: #3df5ff;
+  border: 1.5px solid rgba(61, 245, 255, 0.6);
+  text-decoration: none;
+  cursor: pointer;
+  line-height: 1;
+  touch-action: manipulation;
+}
+#barra a:hover, #barra button:hover { background: rgba(61, 245, 255, 0.18); }
+#bMapa { color: #ffd23d !important; border-color: rgba(255, 210, 61, 0.6) !important; }
+body.en-titulo #bPausa, body.en-titulo #bMapa { display: none; }
+
+/* ---------------------------------------------------------- Controles táctiles */
+#tactil { display: none; }
+body.tactil.jugando #tactil { display: block; }
+body.en-mapa #tactil { display: none !important; }
+
+#zonaJoy {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 50%;
+  height: 62%;
+  z-index: 10;
+  touch-action: none;
+}
+
+#joyBase {
+  position: fixed;
+  left: calc(max(16px, env(safe-area-inset-left)) + 66px);
+  top: calc(100% - max(16px, env(safe-area-inset-bottom)) - 70px);
+  width: 124px;
+  height: 124px;
+  margin: -62px 0 0 -62px;
+  border-radius: 50%;
+  border: 2px solid rgba(61, 245, 255, 0.45);
+  background: rgba(10, 8, 25, 0.3);
+  opacity: 0.6;
+  pointer-events: none;
+}
+#joyBase.activo { opacity: 1; border-color: rgba(61, 245, 255, 0.8); }
+
+#joyPalanca {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 54px;
+  height: 54px;
+  margin: -27px 0 0 -27px;
+  border-radius: 50%;
+  background: rgba(61, 245, 255, 0.55);
+  box-shadow: 0 0 16px rgba(61, 245, 255, 0.6);
+}
+
+#botones {
+  position: fixed;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: repeat(2, 68px);
+  gap: 10px;
+  z-index: 11;
+}
+
+.boton {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  font: 800 10.5px Orbitron, ui-monospace, monospace;
+  letter-spacing: 0.5px;
+  color: #fff;
+  background: rgba(10, 8, 25, 0.62);
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  touch-action: none;
+  padding: 0;
+}
+.boton.apretado { transform: scale(0.92); background: rgba(255, 255, 255, 0.22); }
+#bSubir { color: #3df5ff; border-color: #3df5ff; }
+#bSubir.listo { background: rgba(61, 245, 255, 0.32); box-shadow: 0 0 18px rgba(61, 245, 255, 0.8); }
+#bFreno { color: #ff5c96; border-color: #ff3d81; }
+#bRadio { color: #ffb13d; border-color: #ffb13d; }
+#bClaxon { color: #ffd23d; border-color: #ffd23d; }
+
+@media (max-height: 460px) {
+  #botones { grid-template-columns: repeat(2, 58px); gap: 8px; }
+  .boton { width: 58px; height: 58px; font-size: 9.5px; }
+  #joyBase { width: 104px; height: 104px; margin: -52px 0 0 -52px; }
+}
+
+/* ---------------------------------------------------------- Pantallas */
+.capa {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 16px 16px;
+  box-sizing: border-box;
+  background: radial-gradient(ellipse at center, rgba(5, 3, 15, 0.45) 0%, rgba(5, 3, 15, 0.86) 75%);
+  overflow: hidden;
+}
+
+.caja {
+  max-width: 760px;
+  width: 100%;
+  text-align: center;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(34px, 9vw, 76px);
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: #ffb13d;
+  text-shadow: 0 0 18px rgba(255, 177, 61, 0.85), 0 0 42px rgba(255, 61, 129, 0.5);
+}
+
+h2 {
+  margin: 0 0 18px;
+  font-size: 34px;
+  color: #3df5ff;
+  text-shadow: 0 0 16px rgba(61, 245, 255, 0.7);
+}
+
+.sub {
+  margin: 6px 0 18px;
+  color: #b9b2ff;
+  font: 600 14px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.toca {
+  margin: 0;
+  font-size: clamp(18px, 4.5vw, 26px);
+  font-weight: 800;
+  color: #fff;
+  animation: latido 1.2s ease-in-out infinite;
+}
+
+@keyframes latido {
+  0%, 100% { opacity: 0.45; transform: scale(0.97); }
+  50% { opacity: 1; transform: scale(1.03); }
+}
+
+.mini {
+  margin: 6px 0 0;
+  color: #9a8cff;
+  font: 600 12px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.ayuda {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin: 20px 0 12px;
+}
+
+.col {
+  flex: 1 1 220px;
+  max-width: 330px;
+  text-align: left;
+  background: rgba(10, 8, 25, 0.72);
+  border: 1.5px solid rgba(154, 140, 255, 0.35);
+  border-radius: 14px;
+  padding: 10px 14px;
+}
+
+.col h3 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #3df5ff;
+}
+
+.col ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: 500 13px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #e6e2ff;
+}
+.col b { color: #fff; }
+.c-taxi { color: #ffd23d !important; }
+.c-entrega { color: #c86bff !important; }
+.c-carrera { color: #ff3d81 !important; }
+.c-taller { color: #7dff6b !important; }
+
+body.tactil .solo-teclado { display: none; }
+body:not(.tactil) .solo-tactil { display: none; }
+
+.datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 4px 14px;
+  max-width: 560px;
+  margin: 0 auto;
+  font: 500 12px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #b9b2ff;
+}
+.datos div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid rgba(154, 140, 255, 0.18);
+  padding: 2px 0;
+}
+.datos b { color: #7dff9a; font-family: Orbitron, ui-monospace, monospace; }
+
+.acciones {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.acciones button {
+  min-width: 240px;
+  font: 800 15px Orbitron, ui-monospace, monospace;
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: 2px solid rgba(61, 245, 255, 0.6);
+  background: rgba(10, 8, 25, 0.8);
+  color: #3df5ff;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.acciones button.principal { background: #3df5ff; color: #05030f; }
+.acciones button:hover { filter: brightness(1.2); }
+
+#portada { cursor: pointer; }
+#pausa { background: rgba(5, 3, 15, 0.84); }
+
+@media (max-height: 520px) {
+  .capa { padding-top: 52px; }
+  .ayuda { margin: 10px 0 8px; }
+  .col ul { font-size: 12px; line-height: 1.35; }
+  .sub { margin-bottom: 8px; }
+  .datos { display: none; }
+  h2 { margin-bottom: 10px; }
+}
+
+@media (max-width: 420px) {
+  .col { flex-basis: 100%; }
+  .ayuda .col:last-child { display: none; }
+}

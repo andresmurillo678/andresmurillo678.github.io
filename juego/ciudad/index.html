@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#05030f">
+  <title>Ciudad Libre</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="lienzo" aria-label="Juego Ciudad Libre"></canvas>
+
+  <!-- Barra de arriba: siempre se puede volver al menú -->
+  <div id="barra">
+    <a id="aMenu" href="../">← Menú</a>
+    <button id="bPausa" type="button" aria-label="Pausa">II</button>
+    <button id="bMapa" type="button">MAPA</button>
+  </div>
+
+  <!-- Controles táctiles (solo se ven en celular) -->
+  <div id="tactil">
+    <div id="zonaJoy">
+      <div id="joyBase"><div id="joyPalanca"></div></div>
+    </div>
+    <div id="botones">
+      <button type="button" class="boton" id="bRadio" data-tecla="KeyR">RADIO</button>
+      <button type="button" class="boton" id="bClaxon" data-tecla="KeyH">CLAXON</button>
+      <button type="button" class="boton" id="bFreno" data-tecla="Space">FRENO</button>
+      <button type="button" class="boton" id="bSubir" data-tecla="KeyE">SUBIR</button>
+    </div>
+  </div>
+
+  <!-- Pantalla de inicio -->
+  <div id="portada" class="capa">
+    <div class="caja">
+      <h1>CIUDAD LIBRE</h1>
+      <p class="sub">maneja, explora, haz misiones y escapa de la policía</p>
+      <p class="toca">Toca para jugar</p>
+      <p class="mini solo-teclado">(o pulsa Enter)</p>
+      <div class="ayuda">
+        <div class="col solo-teclado">
+          <h3>Teclado</h3>
+          <ul>
+            <li><b>WASD / flechas</b> manejar o caminar</li>
+            <li><b>Espacio</b> freno de mano (¡derrapa!)</li>
+            <li><b>E</b> subir / bajar del carro</li>
+            <li><b>Shift</b> correr</li>
+            <li><b>H</b> claxon · <b>R</b> radio</li>
+            <li><b>M</b> mapa · <b>P / Esc</b> pausa</li>
+          </ul>
+        </div>
+        <div class="col solo-tactil">
+          <h3>Celular</h3>
+          <ul>
+            <li><b>Joystick</b> (izquierda): empuja hacia donde quieres ir</li>
+            <li><b>SUBIR / BAJAR</b> del carro</li>
+            <li><b>FRENO</b> derrapa · a pie: <b>CORRER</b></li>
+            <li><b>RADIO</b> cambia de estación · <b>CLAXON</b></li>
+            <li>Toca el <b>minimapa</b> para ver el mapa</li>
+          </ul>
+        </div>
+        <div class="col">
+          <h3>Misiones</h3>
+          <ul>
+            <li><b class="c-taxi">T</b> Taxi: lleva pasajeros a tiempo</li>
+            <li><b class="c-entrega">E</b> Entregas: ¡cuidado si es frágil!</li>
+            <li><b class="c-carrera">C</b> Carrera contra el reloj</li>
+            <li><b class="c-taller">R</b> Taller: repara y despista a la policía</li>
+          </ul>
+        </div>
+      </div>
+      <div id="datosPortada" class="datos"></div>
+    </div>
+  </div>
+
+  <!-- Pausa -->
+  <div id="pausa" class="capa oculto">
+    <div class="caja">
+      <h2>PAUSA</h2>
+      <div class="acciones">
+        <button id="bSeguir" type="button" class="principal">SEGUIR</button>
+        <button id="bAbandonar" type="button">ABANDONAR MISIÓN</button>
+        <button id="bSonido" type="button">SONIDO: SÍ</button>
+      </div>
+      <div id="datosPausa" class="datos"></div>
+      <p class="mini">Tu dinero y tus récords se guardan solos en este navegador.</p>
+    </div>
+  </div>
+
+  <!-- El orden importa: config primero, juego al final -->
+  <script src="js/config.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/sonido.js"></script>
+  <script src="js/radio.js"></script>
+  <script src="js/entrada.js"></script>
+  <script src="js/mundo.js"></script>
+  <script src="js/efectos.js"></script>
+  <script src="js/vehiculos.js"></script>
+  <script src="js/personajes.js"></script>
+  <script src="js/misiones.js"></script>
+  <script src="js/hud.js"></script>
+  <script src="js/juego.js"></script>
+</body>
+</html>

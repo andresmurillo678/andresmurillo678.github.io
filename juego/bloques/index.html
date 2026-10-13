@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1a10">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Mundo de Bloques</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="enTitulo">
+  <canvas id="lienzo" aria-label="Mundo de bloques en 3D"></canvas>
+
+  <!-- Lo que se ve mientras juegas -->
+  <div id="hud" class="oculto">
+    <div id="bajoAgua"></div>
+    <div id="mira" aria-hidden="true"></div>
+    <pre id="depuracion" class="oculto"></pre>
+    <div id="ayuda"></div>
+    <div id="aviso"></div>
+    <div id="nombreBloque"></div>
+    <div id="barra"></div>
+  </div>
+
+  <!-- Controles para celular -->
+  <div id="tactil">
+    <div id="joystick"><div id="palanca"></div></div>
+    <button type="button" class="btnTactil" id="btnPausa" data-accion="pausa" aria-label="Pausa">II</button>
+    <button type="button" class="btnTactil" id="btnInventario" data-accion="inventario" aria-label="Bloques">▦</button>
+    <button type="button" class="btnTactil" id="btnVolar" data-accion="volar">VOLAR</button>
+    <button type="button" class="btnTactil" id="btnBajar" data-accion="bajar">BAJAR</button>
+    <button type="button" class="btnTactil" id="btnPoner" data-accion="poner">PONER</button>
+    <button type="button" class="btnTactil" id="btnRomper" data-accion="romper">ROMPER</button>
+    <button type="button" class="btnTactil" id="btnSaltar" data-accion="saltar">SALTAR</button>
+  </div>
+
+  <a id="volverMenu" class="volver" href="../">← Menú</a>
+
+  <!-- Pantalla de inicio -->
+  <div id="pantallaTitulo" class="pantalla">
+    <div class="tarjeta">
+      <h1 class="titulo"><span>MUNDO</span><span>DE BLOQUES</span></h1>
+      <p class="sub">explora · rompe · construye</p>
+      <button type="button" id="btnContinuar" class="principal oculto">CONTINUAR</button>
+      <p id="infoGuardado" class="info oculto"></p>
+      <button type="button" id="btnNuevo">NUEVO MUNDO</button>
+      <div id="panelNuevo" class="oculto">
+        <label for="campoSemilla">Semilla (opcional)</label>
+        <input id="campoSemilla" type="text" maxlength="32" placeholder="vacío = al azar" autocomplete="off" spellcheck="false">
+        <div class="fila">
+          <button type="button" id="btnCrear" class="principal">CREAR</button>
+          <button type="button" id="btnCancelarNuevo">CANCELAR</button>
+        </div>
+        <p id="avisoNuevo" class="info oculto">Ojo: tu mundo guardado se reemplaza.</p>
+      </div>
+      <p class="pista solo-compu">WASD caminar · ratón mirar · clic izq. romper · clic der. poner</p>
+      <p class="pista solo-tactil">joystick para caminar · arrastra para mirar · botones para romper y poner</p>
+    </div>
+  </div>
+
+  <!-- Menú de pausa -->
+  <div id="pantallaPausa" class="pantalla oculto">
+    <div class="tarjeta">
+      <h2>PAUSA</h2>
+      <button type="button" id="btnSeguir" class="principal">SEGUIR JUGANDO</button>
+      <div class="fila">
+        <button type="button" id="btnMusica">MÚSICA: SÍ</button>
+        <button type="button" id="btnEfectos">SONIDOS: SÍ</button>
+      </div>
+      <div class="fila distancia">
+        <span>DISTANCIA</span>
+        <button type="button" id="btnMenosDistancia" aria-label="Ver menos lejos">−</button>
+        <b id="valorDistancia">5</b>
+        <button type="button" id="btnMasDistancia" aria-label="Ver más lejos">+</button>
+      </div>
+      <div class="fila">
+        <button type="button" id="btnDepuracion">DATOS: NO</button>
+        <button type="button" id="btnGuardar">GUARDAR</button>
+      </div>
+      <p id="avisoPausa" class="info" aria-live="polite"></p>
+      <button type="button" id="btnTitulo">SALIR AL TÍTULO</button>
+      <p class="info">Semilla: <span id="textoSemilla"></span> · se guarda solo</p>
+      <p class="pista solo-compu">WASD caminar · Espacio saltar (2 veces = volar) · Shift correr ·
+        W 2 veces rápido = correr o volar rápido · F volar (Espacio sube, Shift baja) ·
+        clic izq. romper · clic der. poner · clic rueda copiar bloque · 1-9 / rueda elegir ·
+        E bloques · M música · F3 datos · Esc pausa</p>
+      <p class="pista solo-tactil">joystick caminar (hasta el fondo = correr) · arrastra mirar ·
+        toca poner · mantén romper · ▦ bloques</p>
+    </div>
+  </div>
+
+  <!-- Inventario (todos los bloques) -->
+  <div id="pantallaInventario" class="pantalla oculto">
+    <div class="tarjeta ancha">
+      <h2>BLOQUES</h2>
+      <p class="info">Elige un bloque para la ranura marcada de tu barra</p>
+      <div id="rejillaInventario"></div>
+      <button type="button" id="btnCerrarInventario">CERRAR</button>
+    </div>
+  </div>
+
+  <div id="pantallaCarga" class="oculto">
+    <p>Creando el mundo…</p>
+    <div class="carga"><div id="barraCarga"></div></div>
+  </div>
+
+  <div id="sinWebgl" class="pantalla oculto">
+    <div class="tarjeta">
+      <h2>UPS</h2>
+      <p class="info">Tu navegador no puede dibujar 3D (WebGL). Prueba con otro navegador o actualízalo.</p>
+    </div>
+  </div>
+
+  <script type="module" src="js/principal.js"></script>
+</body>
+</html>

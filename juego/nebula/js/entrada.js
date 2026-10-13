@@ -1,6 +1,7 @@
 // =============================================================
 //  🎮  CONTROLES
-//  Teclado: flechas o WASD para moverse, P/Esc pausa, M silencio.
+//  Teclado: flechas o WASD para moverse, P/Esc pausa, M silencio,
+//  N música (prender/apagar).
 //  Celular/ratón: arrastra en cualquier parte de la pantalla.
 //  La nave dispara sola.
 // =============================================================

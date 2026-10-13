@@ -2,10 +2,13 @@
 //  🔊  SONIDO
 //  Todos los sonidos se generan con código (no hay archivos de audio).
 //  Cambia las frecuencias (números grandes) para que suenen distinto.
+//  La música de fondo vive en musica.js y usa este mismo "aparato"
+//  de audio, pero con su propio volumen (salidaMusica).
 // =============================================================
 const Sonido = (() => {
   let ctx = null;
-  let maestro = null;
+  let maestro = null;      // volumen de los efectos
+  let busMusica = null;    // por aquí sale la música (el silencio M también la apaga)
   let bufferRuido = null;
   let silenciado = false;
   let inicioPendiente = false;
@@ -29,6 +32,9 @@ const Sonido = (() => {
     maestro = ctx.createGain();
     maestro.gain.value = CONFIG.audio.volumen;
     maestro.connect(ctx.destination);
+    busMusica = ctx.createGain();
+    busMusica.gain.value = silenciado ? 0 : 1;
+    busMusica.connect(ctx.destination);
     // El audio tarda un instante en arrancar: si la melodía de inicio
     // se pidió antes, suena en cuanto esté listo.
     ctx.onstatechange = () => {
@@ -60,6 +66,7 @@ const Sonido = (() => {
     o.type = tipo || 'square';
     o.frequency.setValueAtTime(freq, t);
     if (freqFin) o.frequency.exponentialRampToValueAtTime(freqFin, t + dur);
+    g.gain.value = 0; // así no se cuela un "tic" antes de que empiece
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g);
@@ -68,15 +75,20 @@ const Sonido = (() => {
     o.stop(t + dur + 0.02);
   }
 
-  function ruido(dur, vol, filtro) {
-    if (!bufferRuido) {
+  // Un segundo de "shhhh" (ruido blanco) que sirve para explosiones y tambores
+  function ruidoBuffer() {
+    if (!bufferRuido && ctx) {
       bufferRuido = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
       const datos = bufferRuido.getChannelData(0);
       for (let i = 0; i < datos.length; i++) datos[i] = Math.random() * 2 - 1;
     }
+    return bufferRuido;
+  }
+
+  function ruido(dur, vol, filtro) {
     const t = ctx.currentTime;
     const fuente = ctx.createBufferSource();
-    fuente.buffer = bufferRuido;
+    fuente.buffer = ruidoBuffer();
     const f = ctx.createBiquadFilter();
     f.type = 'lowpass';
     f.frequency.setValueAtTime(filtro, t);
@@ -94,9 +106,21 @@ const Sonido = (() => {
     iniciar,
     get silenciado() { return silenciado; },
 
+    // Lo que necesita musica.js para sonar con el mismo audio
+    contexto: () => ctx,
+    salidaMusica: () => busMusica,
+    ruidoBuffer,
+
     alternar() {
       silenciado = !silenciado;
       try { localStorage.setItem('nebula_silencio', silenciado ? '1' : '0'); } catch (e) { /* nada */ }
+      // La música también se calla (con un fundido cortito para que no truene)
+      if (busMusica) {
+        const t = ctx.currentTime;
+        busMusica.gain.cancelScheduledValues(t);
+        busMusica.gain.setValueAtTime(busMusica.gain.value, t);
+        busMusica.gain.linearRampToValueAtTime(silenciado ? 0 : 1, t + 0.08);
+      }
       return silenciado;
     },
 
